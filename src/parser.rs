@@ -34,13 +34,11 @@ impl<C: Context, Output> Parser<C, Output> for BoxedParser<C, Output> {
 }
 
 pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Error>> {
-    fn parse_fallible(&mut self, context: &mut C) -> Result<Success, C::Error>;
-
     fn parse_or_else(&mut self, context: &mut C, mut recover: impl Parser<C, Success>) -> Success
     where
         Self: Sized,
     {
-        match self.parse_fallible(context) {
+        match self.parse(context) {
             Ok(ok) => ok,
             Err(err) => {
                 context.report(err);
@@ -53,14 +51,9 @@ pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Erro
 impl<P: Parser<C, Result<Success, C::Error>>, C: Context, Success> ParserFallible<C, Success>
     for P
 {
-    fn parse_fallible(&mut self, context: &mut C) -> Result<Success, C::Error> {
-        self.parse(context)
-    }
 }
 
 pub trait ParserOptional<C: Context, Output>: Parser<C, Option<Output>> {
-    fn parse_optional(&mut self, context: &mut C) -> Option<Output>;
-
     /// Convert the output of this parser from `Some(ok)` | `None` to `Ok(ok)` |
     /// `Err(error)`.
     fn ok_or(self, error: C::Error) -> OkOr<C, Self, Output>
@@ -76,11 +69,7 @@ pub trait ParserOptional<C: Context, Output>: Parser<C, Option<Output>> {
     }
 }
 
-impl<P: Parser<C, Option<Output>>, C: Context, Output> ParserOptional<C, Output> for P {
-    fn parse_optional(&mut self, context: &mut C) -> Option<Output> {
-        self.parse(context)
-    }
-}
+impl<P: Parser<C, Option<Output>>, C: Context, Output> ParserOptional<C, Output> for P {}
 
 #[cfg(test)]
 mod tests {
