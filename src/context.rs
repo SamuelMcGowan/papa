@@ -1,6 +1,9 @@
-pub trait Context {
+use crate::parser::Parser;
+use crate::span::{Location, Span};
+
+pub trait Context: Sized {
     type Token;
-    type Location;
+    type Location: Location;
 
     type Error;
 
@@ -39,6 +42,16 @@ pub trait Context {
         F: FnMut(&Self::Token) -> bool,
     {
         EatWhile { tokens: self, pred }
+    }
+
+    fn spanned<P: Parser<Self, Output>, Output>(
+        &mut self,
+        mut parser: P,
+    ) -> (Output, Span<Self::Location>) {
+        let start = self.location();
+        let output = parser.parse(self);
+        let end = self.location();
+        (output, Span::new(start, end))
     }
 }
 
@@ -103,11 +116,11 @@ impl<Token: Clone, Error> Context for VecContext<Token, Error> {
         self.tokens.get(self.loc)
     }
 
-    fn location(&self) -> Self::Location {
+    fn location(&self) -> usize {
         self.loc
     }
 
-    fn set_location(&mut self, location: Self::Location) {
+    fn set_location(&mut self, location: usize) {
         self.loc = location;
     }
 

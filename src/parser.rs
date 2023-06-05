@@ -54,6 +54,14 @@ mod tests {
     }
 
     #[test]
+    fn foo() {
+        let mut ctx: VecContext<u8, String> = VecContext::new("hello");
+
+        let (output, span) = ctx.spanned(parse_ident_always);
+        println!("{:?}, {span:?}", String::from_utf8_lossy(&output));
+    }
+
+    #[test]
     fn test_ident() {
         let mut ctx: VecContext<u8, String> = VecContext::new("hello");
         assert_eq!(&parse_ident_always(&mut ctx), b"hello");
