@@ -3,29 +3,15 @@ use std::marker::PhantomData;
 use crate::context::Context;
 use crate::parser::{Parser, ParserFallible, ParserOptional};
 
-/// Map the result of this parser to another value.
-pub fn map<C, P, OA, OB, F>(parser: P, map: F) -> Map<C, P, OA, OB, F>
-where
-    C: Context,
-    P: Parser<C, OA>,
-    F: Fn(OA) -> OB,
-{
-    Map {
-        parser,
-        map,
-        _phantom: PhantomData,
-    }
-}
-
 pub struct Map<C, P, OA, OB, F>
 where
     C: Context,
     P: Parser<C, OA>,
     F: Fn(OA) -> OB,
 {
-    parser: P,
-    map: F,
-    _phantom: PhantomData<*const (C, OA, OB)>,
+    pub(crate) parser: P,
+    pub(crate) map: F,
+    pub(crate) _phantom: PhantomData<*const (C, OA, OB)>,
 }
 
 impl<C, P, OA, OB, F> Parser<C, OB> for Map<C, P, OA, OB, F>

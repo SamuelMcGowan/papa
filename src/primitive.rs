@@ -21,6 +21,22 @@ impl<C: Context> Parser<C, Option<C::Token>> for Any<C> {
     }
 }
 
+/// Don't do anything, just output `()`.
+pub fn nothing<C: Context>() -> Nothing<C> {
+    Nothing {
+        _phantom: PhantomData,
+    }
+}
+
+pub struct Nothing<C: Context> {
+    _phantom: PhantomData<*const C>,
+}
+
+impl<C: Context> Parser<C, ()> for Nothing<C> {
+    #[inline]
+    fn parse(&mut self, _context: &mut C) {}
+}
+
 /// Parse a token if it matches a predicate.
 pub fn pred<C: Context, F: Fn(&C::Token) -> bool + Copy>(pred: F) -> Pred<C, F> {
     Pred {

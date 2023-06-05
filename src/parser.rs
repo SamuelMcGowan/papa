@@ -1,12 +1,26 @@
 use std::marker::PhantomData;
 
-use crate::combinator::{Drop, OkOr, Recover};
+use crate::combinator::{Drop, Map, OkOr, Recover};
 use crate::context::Context;
 
 /// A parser.
 pub trait Parser<C: Context, Output> {
     fn parse(&mut self, context: &mut C) -> Output;
 
+    /// Map the result of this parser to another value.
+    fn map<F, OutputB>(self, map: F) -> Map<C, Self, Output, OutputB, F>
+    where
+        Self: Sized,
+        F: Fn(Output) -> OutputB,
+    {
+        Map {
+            parser: self,
+            map,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Drop the result of this parser and output `()` instead.
     fn drop(self) -> Drop<C, Self, Output>
     where
         Self: Sized,
@@ -26,19 +40,6 @@ impl<F: FnMut(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
 
 /// An extension trait for parsers that output a [`Result`].
 pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Error>> {
-    fn parse_or_else(&mut self, context: &mut C, mut recover: impl Parser<C, Success>) -> Success
-    where
-        Self: Sized,
-    {
-        match self.parse(context) {
-            Ok(ok) => ok,
-            Err(err) => {
-                context.report(err);
-                recover.parse(context)
-            }
-        }
-    }
-
     /// Run a parser upon an error.
     fn recover<R, D>(self, recover: R, default: D) -> Recover<C, Self, R, Success, D>
     where
@@ -83,7 +84,7 @@ impl<P: Parser<C, Option<Success>>, C: Context, Success> ParserOptional<C, Succe
 mod tests {
     use super::*;
     use crate::context::*;
-    use crate::primitive::any;
+    use crate::primitive::{any, nothing};
     use crate::span::Span;
 
     type Ctx = VecContext<u8, String>;
@@ -105,7 +106,9 @@ mod tests {
     }
 
     fn parse_ident_always(ctx: &mut Ctx) -> Vec<u8> {
-        parse_ident.parse_or_else(ctx, |_ctx: &mut _| b"dummy_ident".to_vec())
+        parse_ident
+            .recover(nothing(), || b"dummy_ident".to_vec())
+            .parse(ctx)
     }
 
     #[test]
