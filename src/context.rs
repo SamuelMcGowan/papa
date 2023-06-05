@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 pub trait Context {
     type Token;
     type Location;
@@ -15,19 +13,19 @@ pub trait Context {
     fn report(&mut self, error: Self::Error);
 
     #[inline]
-    fn matches<P>(&self, pat: P) -> bool
+    fn matches<F>(&self, pred: F) -> bool
     where
-        Self::Token: Match<P>,
+        F: FnMut(&Self::Token) -> bool,
     {
-        self.peek().is_some_and(|item| item.is_match(pat))
+        self.peek().is_some_and(pred)
     }
 
     #[inline]
-    fn eat<P>(&mut self, pat: P) -> Option<Self::Token>
+    fn eat_if<F>(&mut self, pred: F) -> Option<Self::Token>
     where
-        Self::Token: Match<P>,
+        F: FnMut(&Self::Token) -> bool + Copy,
     {
-        if self.matches(pat) {
+        if self.matches(pred) {
             self.next()
         } else {
             None
@@ -35,74 +33,33 @@ pub trait Context {
     }
 
     #[inline]
-    fn eat_while<P>(&mut self, pat: P) -> EatWhile<Self, P>
+    fn eat_while<F>(&mut self, pred: F) -> EatWhile<Self, F>
     where
         Self: Sized,
-        Self::Token: Match<P>,
+        F: FnMut(&Self::Token) -> bool,
     {
-        EatWhile {
-            tokens: self,
-            pattern: pat,
-        }
+        EatWhile { tokens: self, pred }
     }
 }
 
-pub trait Match<Pattern> {
-    fn is_match(&self, pattern: Pattern) -> bool;
-}
-
-pub struct Cond<T, F: Fn(&T) -> bool> {
-    f: F,
-    _phantom: PhantomData<T>,
-}
-impl<T, F: Fn(&T) -> bool + Clone> Clone for Cond<T, F> {
-    fn clone(&self) -> Self {
-        Self {
-            f: self.f.clone(),
-            _phantom: PhantomData,
-        }
-    }
-}
-impl<T, F: Fn(&T) -> bool + Copy> Copy for Cond<T, F> {}
-
-pub fn cond<T, F: Fn(&T) -> bool>(f: F) -> Cond<T, F> {
-    Cond {
-        f,
-        _phantom: PhantomData,
-    }
-}
-
-impl<T: Eq> Match<&T> for T {
-    fn is_match(&self, pattern: &T) -> bool {
-        self == pattern
-    }
-}
-
-impl<T, F: Fn(&T) -> bool> Match<Cond<T, F>> for T {
-    fn is_match(&self, pattern: Cond<T, F>) -> bool {
-        (pattern.f)(self)
-    }
-}
-
-pub struct EatWhile<'a, T, P>
+pub struct EatWhile<'a, C, F>
 where
-    T: Context,
-    T::Token: Match<P>,
+    C: Context,
+    F: FnMut(&C::Token) -> bool,
 {
-    tokens: &'a mut T,
-    pattern: P,
+    tokens: &'a mut C,
+    pred: F,
 }
 
-impl<T, P> Iterator for EatWhile<'_, T, P>
+impl<C, F> Iterator for EatWhile<'_, C, F>
 where
-    T: Context,
-    P: Copy,
-    T::Token: Match<P>,
+    C: Context,
+    F: FnMut(&C::Token) -> bool + Copy,
 {
-    type Item = T::Token;
+    type Item = C::Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.tokens.eat(self.pattern)
+        self.tokens.eat_if(self.pred)
     }
 }
 

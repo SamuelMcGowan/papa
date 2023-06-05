@@ -39,7 +39,7 @@ mod tests {
 
     fn parse_ident(ctx: &mut VecContext<u8, String>) -> Result<Vec<u8>, String> {
         let s: Vec<_> = ctx
-            .eat_while(cond(|c: &u8| c.is_ascii_alphabetic() || *c == b'_'))
+            .eat_while(|c| c.is_ascii_alphabetic() || *c == b'_')
             .collect();
 
         if s.is_empty() {
