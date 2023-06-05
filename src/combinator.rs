@@ -96,42 +96,47 @@ where
     }
 }
 
-pub fn choice<C: Context, P: ParserList<C, Output>, Output>(parsers: P) -> Choice<C, Output, P> {
+/// A parser that tries to parse one of a tuple of parsers.
+pub fn choice<C: Context, P: ParserTuple<C, Output>, Output>(parsers: P) -> Choice<C, Output, P> {
     Choice {
         parsers,
         _phantom: PhantomData,
     }
 }
 
-pub struct Choice<C: Context, Output, Parsers: ParserList<C, Output>> {
+pub struct Choice<C: Context, Output, Parsers: ParserTuple<C, Output>> {
     parsers: Parsers,
     _phantom: PhantomData<*const (C, Output)>,
 }
 
-pub trait ParserList<Ctx, Output> {}
+impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Option<Output>>
+    for Choice<C, Output, Parsers>
+{
+    fn parse(&mut self, context: &mut C) -> Option<Output> {
+        self.parsers.parse_choice(context)
+    }
+}
+
+/// A tuple of [`ParserOptional`]s, to be passed to [`choice`].
+///
+/// Currently implemented for tuples of up to 8 elements.
+pub trait ParserTuple<Ctx, Output> {
+    #[doc(hidden)]
+    fn parse_choice(&mut self, context: &mut Ctx) -> Option<Output>;
+}
 
 macro_rules! impl_choice {
     ($($n:tt $parser:ident),*) => {
         impl<Ctx, Output, $($parser,)*>
-        ParserList<Ctx, Output> for ($($parser,)*)
-        where
-            Ctx: Context,
-            $($parser: ParserOptional<Ctx, Output>,)*
-         {
-
-        }
-
-        impl<Ctx, Output, $($parser,)*>
-        Parser<Ctx, Option<Output>>
-        for Choice<Ctx, Output, ($($parser,)*)>
+        ParserTuple<Ctx, Output> for ($($parser,)*)
         where
             Ctx: Context,
             $($parser: ParserOptional<Ctx, Output>,)*
         {
-            fn parse(&mut self, context: &mut Ctx) -> Option<Output> {
+            fn parse_choice(&mut self, context: &mut Ctx) -> Option<Output> {
                 $(
                     let start = context.location();
-                    if let Some(output) = self.parsers.$n.parse(context) {
+                    if let Some(output) = self.$n.parse(context) {
                         return Some(output);
                     }
                     context.set_location(start);
