@@ -95,3 +95,59 @@ where
         self.parser.parse(context);
     }
 }
+
+pub fn choice<C: Context, P: ParserList<C, Output>, Output>(parsers: P) -> Choice<C, Output, P> {
+    Choice {
+        parsers,
+        _phantom: PhantomData,
+    }
+}
+
+pub struct Choice<C: Context, Output, Parsers: ParserList<C, Output>> {
+    parsers: Parsers,
+    _phantom: PhantomData<*const (C, Output)>,
+}
+
+pub trait ParserList<Ctx, Output> {}
+
+macro_rules! impl_choice {
+    ($($n:tt $parser:ident),*) => {
+        impl<Ctx, Output, $($parser,)*>
+        ParserList<Ctx, Output> for ($($parser,)*)
+        where
+            Ctx: Context,
+            $($parser: ParserOptional<Ctx, Output>,)*
+         {
+
+        }
+
+        impl<Ctx, Output, $($parser,)*>
+        Parser<Ctx, Option<Output>>
+        for Choice<Ctx, Output, ($($parser,)*)>
+        where
+            Ctx: Context,
+            $($parser: ParserOptional<Ctx, Output>,)*
+        {
+            fn parse(&mut self, context: &mut Ctx) -> Option<Output> {
+                $(
+                    let start = context.location();
+                    if let Some(output) = self.parsers.$n.parse(context) {
+                        return Some(output);
+                    }
+                    context.set_location(start);
+                )*
+
+                None
+            }
+        }
+    };
+}
+
+impl_choice! { 0 A }
+impl_choice! { 0 A, 1 B }
+impl_choice! { 0 A, 1 B, 2 C }
+impl_choice! { 0 A, 1 B, 2 C, 3 D }
+impl_choice! { 0 A, 1 B, 2 C, 3 D, 4 E }
+impl_choice! { 0 A, 1 B, 2 C, 3 D, 4 E, 5 F }
+impl_choice! { 0 A, 1 B, 2 C, 3 D, 4 E, 5 F, 6 G }
+impl_choice! { 0 A, 1 B, 2 C, 3 D, 4 E, 5 F, 6 G, 7 H }
