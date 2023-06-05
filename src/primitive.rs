@@ -29,7 +29,11 @@ pub fn pred<C: Context, F: Fn(&C::Token) -> bool + Copy>(pred: F) -> Pred<C, F> 
     }
 }
 
-pub struct Pred<C: Context, F: Fn(&C::Token) -> bool + Copy> {
+pub struct Pred<C, F>
+where
+    C: Context,
+    F: Fn(&C::Token) -> bool + Copy,
+{
     pred: F,
     _phantom: PhantomData<*const C>,
 }

@@ -40,13 +40,11 @@ pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Erro
     }
 
     /// Run a parser upon an error.
-    fn recover<R: Parser<C, ()>, D: Fn() -> Success>(
-        self,
-        recover: R,
-        default: D,
-    ) -> Recover<C, Self, R, Success, D>
+    fn recover<R, D>(self, recover: R, default: D) -> Recover<C, Self, R, Success, D>
     where
         Self: Sized,
+        R: Parser<C, ()>,
+        D: Fn() -> Success,
     {
         Recover {
             parser: self,
