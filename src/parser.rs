@@ -1,11 +1,21 @@
 use std::marker::PhantomData;
 
-use crate::combinator::OkOr;
+use crate::combinator::{Drop, OkOr, Recover};
 use crate::context::Context;
 
 /// A parser.
 pub trait Parser<C: Context, Output> {
     fn parse(&mut self, context: &mut C) -> Output;
+
+    fn drop(self) -> Drop<C, Self, Output>
+    where
+        Self: Sized,
+    {
+        Drop {
+            parser: self,
+            _phantom: PhantomData,
+        }
+    }
 }
 
 impl<F: FnMut(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
@@ -26,6 +36,23 @@ pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Erro
                 context.report(err);
                 recover.parse(context)
             }
+        }
+    }
+
+    /// Run a parser upon an error.
+    fn recover<R: Parser<C, ()>, D: Fn() -> Success>(
+        self,
+        recover: R,
+        default: D,
+    ) -> Recover<C, Self, R, Success, D>
+    where
+        Self: Sized,
+    {
+        Recover {
+            parser: self,
+            recover,
+            default,
+            _phantom: PhantomData,
         }
     }
 }
@@ -75,6 +102,10 @@ mod tests {
         }
     }
 
+    fn parse_digits(ctx: &mut Ctx) -> Vec<u8> {
+        ctx.eat_while(|c| c.is_ascii_digit()).collect()
+    }
+
     fn parse_ident_always(ctx: &mut Ctx) -> Vec<u8> {
         parse_ident.parse_or_else(ctx, |_ctx: &mut _| b"dummy_ident".to_vec())
     }
@@ -111,5 +142,15 @@ mod tests {
         let (output, span) = ctx.spanned(parse_ident_always);
         assert_eq!(&output, b"hello");
         assert_eq!(span, Span::new(0, 5));
+    }
+
+    #[test]
+    fn recover() {
+        let mut ctx = Ctx::new("123");
+
+        let mut parser = parse_ident.recover(parse_digits.drop(), || b"it was missing".to_vec());
+
+        let result = parser.parse(&mut ctx);
+        assert_eq!(&result, b"it was missing");
     }
 }
