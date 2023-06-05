@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use crate::combinator::OkOr;
 use crate::context::Context;
 
+/// A parser.
 pub trait Parser<C: Context, Output> {
     fn parse(&mut self, context: &mut C) -> Output;
 }
@@ -13,26 +14,7 @@ impl<F: FnMut(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
     }
 }
 
-pub struct BoxedParser<C: Context, Output> {
-    parser: Box<dyn Parser<C, Output>>,
-    _phantom: PhantomData<*const (C, Output)>,
-}
-
-impl<C: Context, Output> BoxedParser<C, Output> {
-    pub fn new(parser: impl Parser<C, Output> + 'static) -> Self {
-        Self {
-            parser: Box::new(parser),
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<C: Context, Output> Parser<C, Output> for BoxedParser<C, Output> {
-    fn parse(&mut self, context: &mut C) -> Output {
-        self.parser.parse(context)
-    }
-}
-
+/// An extension trait for parsers that output a [`Result`].
 pub trait ParserFallible<C: Context, Success>: Parser<C, Result<Success, C::Error>> {
     fn parse_or_else(&mut self, context: &mut C, mut recover: impl Parser<C, Success>) -> Success
     where
@@ -53,10 +35,11 @@ impl<P: Parser<C, Result<Success, C::Error>>, C: Context, Success> ParserFallibl
 {
 }
 
-pub trait ParserOptional<C: Context, Output>: Parser<C, Option<Output>> {
+/// An extension trait for parsers that output an [`Option`].
+pub trait ParserOptional<C: Context, Success>: Parser<C, Option<Success>> {
     /// Convert the output of this parser from `Some(ok)` | `None` to `Ok(ok)` |
     /// `Err(error)`.
-    fn ok_or(self, error: C::Error) -> OkOr<C, Self, Output>
+    fn ok_or(self, error: C::Error) -> OkOr<C, Self, Success>
     where
         Self: Sized,
         C::Error: Clone,
@@ -69,7 +52,7 @@ pub trait ParserOptional<C: Context, Output>: Parser<C, Option<Output>> {
     }
 }
 
-impl<P: Parser<C, Option<Output>>, C: Context, Output> ParserOptional<C, Output> for P {}
+impl<P: Parser<C, Option<Success>>, C: Context, Success> ParserOptional<C, Success> for P {}
 
 #[cfg(test)]
 mod tests {

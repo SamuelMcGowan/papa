@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::context::Context;
-use crate::parser::Parser;
+use crate::parser::{Parser, ParserFallible, ParserOptional};
 
 /// Map the result of this parser to another value.
 pub fn map<C: Context, P: Parser<C, OA>, OA, OB, F: Fn(OA) -> OB>(
@@ -28,21 +28,21 @@ impl<C: Context, P: Parser<C, OA>, OA, OB, F: Fn(OA) -> OB> Parser<C, OB> for Ma
     }
 }
 
-pub struct OkOr<C: Context, P: Parser<C, Option<Output>>, Output>
+pub struct OkOr<C: Context, P: ParserOptional<C, Success>, Success>
 where
     C::Error: Clone,
 {
     pub(crate) parser: P,
     pub(crate) error: C::Error,
-    pub(crate) _phantom: PhantomData<*const Output>,
+    pub(crate) _phantom: PhantomData<*const Success>,
 }
 
-impl<C: Context, P: Parser<C, Option<Output>>, Output> Parser<C, Result<Output, C::Error>>
-    for OkOr<C, P, Output>
+impl<C: Context, P: ParserOptional<C, Success>, Success> Parser<C, Result<Success, C::Error>>
+    for OkOr<C, P, Success>
 where
     C::Error: Clone,
 {
-    fn parse(&mut self, context: &mut C) -> Result<Output, C::Error> {
+    fn parse(&mut self, context: &mut C) -> Result<Success, C::Error> {
         self.parser.parse(context).ok_or(self.error.clone())
     }
 }
