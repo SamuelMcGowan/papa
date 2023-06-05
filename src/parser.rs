@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::combinator::OkOr;
 use crate::context::Context;
 
 pub trait Parser<C: Context, Output> {
@@ -60,18 +61,18 @@ impl<P: Parser<C, Result<Success, C::Error>>, C: Context, Success> ParserFallibl
 pub trait ParserOptional<C: Context, Output>: Parser<C, Option<Output>> {
     fn parse_optional(&mut self, context: &mut C) -> Option<Output>;
 
-    // TODO: return custom type instead of trait object.
-    fn ok_or(self, err: C::Error) -> BoxedParser<C, Result<Output, C::Error>>
+    /// Convert the output of this parser from `Some(ok)` | `None` to `Ok(ok)` |
+    /// `Err(error)`.
+    fn ok_or(self, error: C::Error) -> OkOr<C, Self, Output>
     where
         Self: Sized,
         C::Error: Clone,
-
-        Self: 'static,
-        Output: 'static,
-        C: 'static,
     {
-        let parser = map(self, move |opt| opt.ok_or(err.clone()));
-        BoxedParser::new(parser)
+        OkOr {
+            parser: self,
+            error,
+            _phantom: PhantomData,
+        }
     }
 }
 
@@ -81,34 +82,11 @@ impl<P: Parser<C, Option<Output>>, C: Context, Output> ParserOptional<C, Output>
     }
 }
 
-pub fn any<C: Context>() -> impl Parser<C, Option<C::Token>> {
-    |ctx: &mut C| ctx.next()
-}
-
-pub fn pred<C: Context, F: FnMut(&C::Token) -> bool + Copy>(
-    pred: F,
-) -> impl Parser<C, Option<C::Token>> {
-    move |ctx: &mut C| ctx.eat_if(pred)
-}
-
-pub fn just<C: Context>(token: C::Token) -> impl Parser<C, Result<C::Token, ()>>
-where
-    C::Token: Eq,
-{
-    move |ctx: &mut C| ctx.eat_if(|t| t == &token).ok_or(())
-}
-
-pub fn map<C: Context, A, B>(
-    mut parser: impl Parser<C, A>,
-    f: impl Fn(A) -> B,
-) -> impl Parser<C, B> {
-    move |ctx: &mut C| f(parser.parse(ctx))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::context::*;
+    use crate::primitive::any;
     use crate::span::Span;
 
     type Ctx = VecContext<u8, String>;
