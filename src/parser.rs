@@ -32,12 +32,32 @@ impl<F: FnMut(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
     }
 }
 
+pub fn any<C: Context>() -> impl Parser<C, Result<C::Token, ()>> {
+    |ctx: &mut C| ctx.next().ok_or(())
+}
+
+pub fn pred<C: Context, F: FnMut(&C::Token) -> bool + Copy>(
+    pred: F,
+) -> impl Parser<C, Result<C::Token, ()>> {
+    move |ctx: &mut C| ctx.eat_if(pred).ok_or(())
+}
+
+pub fn just<C: Context>(token: C::Token) -> impl Parser<C, Result<C::Token, ()>>
+where
+    C::Token: Eq,
+{
+    move |ctx: &mut C| ctx.eat_if(|t| t == &token).ok_or(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::ParserFallible;
+    use super::{any, ParserFallible};
     use crate::context::*;
+    use crate::span::Span;
 
-    fn parse_ident(ctx: &mut VecContext<u8, String>) -> Result<Vec<u8>, String> {
+    type Ctx = VecContext<u8, String>;
+
+    fn parse_ident(ctx: &mut Ctx) -> Result<Vec<u8>, String> {
         let s: Vec<_> = ctx
             .eat_while(|c| c.is_ascii_alphabetic() || *c == b'_')
             .collect();
@@ -49,27 +69,34 @@ mod tests {
         }
     }
 
-    fn parse_ident_always(ctx: &mut VecContext<u8, String>) -> Vec<u8> {
+    fn parse_ident_always(ctx: &mut Ctx) -> Vec<u8> {
         parse_ident.parse_or_else(ctx, |_ctx: &mut _| b"dummy_ident".to_vec())
     }
 
     #[test]
-    fn foo() {
-        let mut ctx: VecContext<u8, String> = VecContext::new("hello");
-
-        let (output, span) = ctx.spanned(parse_ident_always);
-        println!("{:?}, {span:?}", String::from_utf8_lossy(&output));
-    }
-
-    #[test]
-    fn test_ident() {
-        let mut ctx: VecContext<u8, String> = VecContext::new("hello");
+    fn ident() {
+        let mut ctx = Ctx::new("hello");
         assert_eq!(&parse_ident_always(&mut ctx), b"hello");
     }
 
     #[test]
-    fn test_ident_empty() {
-        let mut ctx: VecContext<u8, String> = VecContext::new("");
+    fn empty_ident() {
+        let mut ctx = Ctx::new("");
         assert_eq!(&parse_ident_always(&mut ctx), b"dummy_ident");
+    }
+
+    #[test]
+    fn spanned_token() {
+        let mut ctx = Ctx::new("hello");
+        let token = ctx.spanned(any());
+        assert_eq!(token, (Ok(b'h'), Span::new(0, 1)));
+    }
+
+    #[test]
+    fn spanned_ident() {
+        let mut ctx = Ctx::new("hello");
+        let (output, span) = ctx.spanned(parse_ident_always);
+        assert_eq!(&output, b"hello");
+        assert_eq!(span, Span::new(0, 5));
     }
 }

@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::Range;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Span<L: Location> {
     start: L,
     end: L,

@@ -26,7 +26,7 @@ pub trait Context: Sized {
     #[inline]
     fn eat_if<F>(&mut self, pred: F) -> Option<Self::Token>
     where
-        F: FnMut(&Self::Token) -> bool + Copy,
+        F: FnMut(&Self::Token) -> bool,
     {
         if self.matches(pred) {
             self.next()
