@@ -16,7 +16,7 @@ pub struct Any<C: Context> {
 
 impl<C: Context> Parser<C, Option<C::Token>> for Any<C> {
     #[inline]
-    fn parse(&mut self, context: &mut C) -> Option<C::Token> {
+    fn parse(&self, context: &mut C) -> Option<C::Token> {
         context.next()
     }
 }
@@ -34,7 +34,7 @@ pub struct Nothing<C: Context> {
 
 impl<C: Context> Parser<C, ()> for Nothing<C> {
     #[inline]
-    fn parse(&mut self, _context: &mut C) {}
+    fn parse(&self, _context: &mut C) {}
 }
 
 /// Parse a token if it matches a predicate.
@@ -55,7 +55,7 @@ where
 }
 
 impl<C: Context, F: Fn(&C::Token) -> bool + Copy> Parser<C, Option<C::Token>> for Pred<C, F> {
-    fn parse(&mut self, context: &mut C) -> Option<C::Token> {
+    fn parse(&self, context: &mut C) -> Option<C::Token> {
         context.eat_if(self.pred)
     }
 }

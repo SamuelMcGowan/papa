@@ -5,7 +5,7 @@ use crate::context::Context;
 
 /// A parser.
 pub trait Parser<C: Context, Output> {
-    fn parse(&mut self, context: &mut C) -> Output;
+    fn parse(&self, context: &mut C) -> Output;
 
     /// Map the result of this parser to another value.
     fn map<F, OutputB>(self, map: F) -> Map<C, Self, Output, OutputB, F>
@@ -32,8 +32,8 @@ pub trait Parser<C: Context, Output> {
     }
 }
 
-impl<F: FnMut(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
-    fn parse(&mut self, context: &mut C) -> Output {
+impl<F: Fn(&mut C) -> Output, C: Context, Output> Parser<C, Output> for F {
+    fn parse(&self, context: &mut C) -> Output {
         self(context)
     }
 }
@@ -149,7 +149,7 @@ mod tests {
     fn recover() {
         let mut ctx = Ctx::new("123");
 
-        let mut parser = parse_ident.recover(parse_digits.drop(), || b"it was missing".to_vec());
+        let parser = parse_ident.recover(parse_digits.drop(), || b"it was missing".to_vec());
 
         let result = parser.parse(&mut ctx);
         assert_eq!(&result, b"it was missing");

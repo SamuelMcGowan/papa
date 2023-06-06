@@ -20,7 +20,7 @@ where
     P: Parser<C, OA>,
     F: Fn(OA) -> OB,
 {
-    fn parse(&mut self, context: &mut C) -> OB {
+    fn parse(&self, context: &mut C) -> OB {
         let output = self.parser.parse(context);
         (self.map)(output)
     }
@@ -43,7 +43,7 @@ where
     C: Context,
     P: ParserOptional<C, Success>,
 {
-    fn parse(&mut self, context: &mut C) -> Result<Success, C::Error> {
+    fn parse(&self, context: &mut C) -> Result<Success, C::Error> {
         self.parser.parse(context).ok_or(self.error.clone())
     }
 }
@@ -68,7 +68,7 @@ where
     R: Parser<C, ()>,
     D: Fn() -> Success,
 {
-    fn parse(&mut self, context: &mut C) -> Success {
+    fn parse(&self, context: &mut C) -> Success {
         self.parser.parse(context).unwrap_or_else(|error| {
             context.report(error);
             self.recover.parse(context);
@@ -91,7 +91,7 @@ where
     C: Context,
     P: Parser<C, Output>,
 {
-    fn parse(&mut self, context: &mut C) {
+    fn parse(&self, context: &mut C) {
         self.parser.parse(context);
     }
 }
@@ -112,7 +112,7 @@ pub struct Choice<C: Context, Output, Parsers: ParserTuple<C, Output>> {
 impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Option<Output>>
     for Choice<C, Output, Parsers>
 {
-    fn parse(&mut self, context: &mut C) -> Option<Output> {
+    fn parse(&self, context: &mut C) -> Option<Output> {
         self.parsers.parse_choice(context)
     }
 }
@@ -122,7 +122,7 @@ impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Option<Outpu
 /// Currently implemented for tuples of up to 8 elements.
 pub trait ParserTuple<Ctx, Output> {
     #[doc(hidden)]
-    fn parse_choice(&mut self, context: &mut Ctx) -> Option<Output>;
+    fn parse_choice(&self, context: &mut Ctx) -> Option<Output>;
 }
 
 macro_rules! impl_choice {
@@ -133,7 +133,7 @@ macro_rules! impl_choice {
             Ctx: Context,
             $($parser: ParserOptional<Ctx, Output>,)*
         {
-            fn parse_choice(&mut self, context: &mut Ctx) -> Option<Output> {
+            fn parse_choice(&self, context: &mut Ctx) -> Option<Output> {
                 $(
                     let start = context.location();
                     if let Some(output) = self.$n.parse(context) {
