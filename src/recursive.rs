@@ -2,7 +2,7 @@ use std::cell::OnceCell;
 use std::rc::Rc;
 
 use crate::context::Context;
-use crate::parser::Parser;
+use crate::parser::{ParseResult, Parser};
 
 // Technique stolen from https://crates.io/crates/chumsky.
 
@@ -25,7 +25,7 @@ impl<C: Context, Output> Recursive<C, Output> {
 }
 
 impl<C: Context, Output> Parser<C, Output> for Rc<Recursive<C, Output>> {
-    fn parse(&self, context: &mut C) -> Output {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         let parser = self
             .parser
             .get()

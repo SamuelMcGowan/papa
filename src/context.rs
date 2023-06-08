@@ -1,5 +1,4 @@
-use crate::parser::Parser;
-use crate::span::{Location, Span};
+use crate::span::Location;
 
 pub trait Context: Sized {
     type Token;
@@ -42,16 +41,6 @@ pub trait Context: Sized {
         F: FnMut(&Self::Token) -> bool,
     {
         EatWhile { tokens: self, pred }
-    }
-
-    fn spanned<P: Parser<Self, Output>, Output>(
-        &mut self,
-        parser: P,
-    ) -> (Output, Span<Self::Location>) {
-        let start = self.location();
-        let output = parser.parse(self);
-        let end = self.location();
-        (output, Span::new(start, end))
     }
 }
 

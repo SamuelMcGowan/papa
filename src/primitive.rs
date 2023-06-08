@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::context::Context;
-use crate::parser::Parser;
+use crate::parser::{ParseResult, Parser};
 
 /// Parse any token.
 pub fn any<C: Context>() -> Any<C> {
@@ -14,10 +14,10 @@ pub struct Any<C: Context> {
     _phantom: PhantomData<*const C>,
 }
 
-impl<C: Context> Parser<C, Option<C::Token>> for Any<C> {
+impl<C: Context> Parser<C, C::Token> for Any<C> {
     #[inline]
-    fn parse(&self, context: &mut C) -> Option<C::Token> {
-        context.next()
+    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+        context.next().into()
     }
 }
 
@@ -33,12 +33,17 @@ pub struct Nothing<C: Context> {
 }
 
 impl<C: Context> Parser<C, ()> for Nothing<C> {
-    #[inline]
-    fn parse(&self, _context: &mut C) {}
+    fn parse(&self, _context: &mut C) -> ParseResult<C, ()> {
+        ().into()
+    }
 }
 
 /// Parse a token if it matches a predicate.
-pub fn pred<C: Context, F: Fn(&C::Token) -> bool + Copy>(pred: F) -> Pred<C, F> {
+pub fn pred<C, F>(pred: F) -> Pred<C, F>
+where
+    C: Context,
+    F: Fn(&C::Token) -> bool + Copy,
+{
     Pred {
         pred,
         _phantom: PhantomData,
@@ -54,8 +59,43 @@ where
     _phantom: PhantomData<*const C>,
 }
 
-impl<C: Context, F: Fn(&C::Token) -> bool + Copy> Parser<C, Option<C::Token>> for Pred<C, F> {
-    fn parse(&self, context: &mut C) -> Option<C::Token> {
-        context.eat_if(self.pred)
+impl<C, F> Parser<C, C::Token> for Pred<C, F>
+where
+    C: Context,
+    F: Fn(&C::Token) -> bool + Copy,
+{
+    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+        context.eat_if(self.pred).into()
+    }
+}
+
+/// Construct a parser from a function.
+pub fn func<C, F, Output>(f: F) -> FuncParser<C, F, Output>
+where
+    C: Context,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
+{
+    FuncParser {
+        f,
+        _phantom: PhantomData,
+    }
+}
+
+pub struct FuncParser<C, F, Output>
+where
+    C: Context,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
+{
+    f: F,
+    _phantom: PhantomData<*const (C, Output)>,
+}
+
+impl<C, F, Output> Parser<C, Output> for FuncParser<C, F, Output>
+where
+    C: Context,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
+{
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+        (self.f)(context)
     }
 }

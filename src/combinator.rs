@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 
 use crate::context::Context;
-use crate::parser::{Parser, ParserFallible, ParserOptional};
+use crate::parser::{ParseResult, Parser};
 
 pub struct Map<C, P, OA, OB, F>
 where
     C: Context,
     P: Parser<C, OA>,
-    F: Fn(OA) -> OB,
+    F: Fn(OA) -> OB + Copy,
 {
     pub(crate) parser: P,
     pub(crate) map: F,
@@ -18,62 +18,10 @@ impl<C, P, OA, OB, F> Parser<C, OB> for Map<C, P, OA, OB, F>
 where
     C: Context,
     P: Parser<C, OA>,
-    F: Fn(OA) -> OB,
+    F: Fn(OA) -> OB + Copy,
 {
-    fn parse(&self, context: &mut C) -> OB {
-        let output = self.parser.parse(context);
-        (self.map)(output)
-    }
-}
-
-pub struct OkOr<C, P, Success>
-where
-    C::Error: Clone,
-    C: Context,
-    P: ParserOptional<C, Success>,
-{
-    pub(crate) parser: P,
-    pub(crate) error: C::Error,
-    pub(crate) _phantom: PhantomData<*const Success>,
-}
-
-impl<C, P, Success> Parser<C, Result<Success, C::Error>> for OkOr<C, P, Success>
-where
-    C::Error: Clone,
-    C: Context,
-    P: ParserOptional<C, Success>,
-{
-    fn parse(&self, context: &mut C) -> Result<Success, C::Error> {
-        self.parser.parse(context).ok_or(self.error.clone())
-    }
-}
-
-pub struct Recover<C, P, R, Success, D>
-where
-    C: Context,
-    P: ParserFallible<C, Success>,
-    R: Parser<C, ()>,
-    D: Fn() -> Success,
-{
-    pub(crate) parser: P,
-    pub(crate) recover: R,
-    pub(crate) default: D,
-    pub(crate) _phantom: PhantomData<*const (C, Success)>,
-}
-
-impl<C, P, R, Success, D> Parser<C, Success> for Recover<C, P, R, Success, D>
-where
-    C: Context,
-    P: ParserFallible<C, Success>,
-    R: Parser<C, ()>,
-    D: Fn() -> Success,
-{
-    fn parse(&self, context: &mut C) -> Success {
-        self.parser.parse(context).unwrap_or_else(|error| {
-            context.report(error);
-            self.recover.parse(context);
-            (self.default)()
-        })
+    fn parse(&self, context: &mut C) -> ParseResult<C, OB> {
+        self.parser.parse(context).map(self.map)
     }
 }
 
@@ -86,13 +34,14 @@ where
     pub(crate) _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C, P, Output> Parser<C, ()> for Drop<C, P, Output>
+impl<C, P, Output> Parser<C, Output> for Drop<C, P, Output>
 where
     C: Context,
     P: Parser<C, Output>,
 {
-    fn parse(&self, context: &mut C) {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parser.parse(context);
+        ().into()
     }
 }
 
@@ -109,10 +58,10 @@ pub struct Choice<C: Context, Output, Parsers: ParserTuple<C, Output>> {
     _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Option<Output>>
+impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Output>
     for Choice<C, Output, Parsers>
 {
-    fn parse(&self, context: &mut C) -> Option<Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parsers.parse_choice(context)
     }
 }
@@ -120,9 +69,9 @@ impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Option<Outpu
 /// A tuple of [`ParserOptional`]s, to be passed to [`choice`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ParserTuple<Ctx, Output> {
+pub trait ParserTuple<Ctx: Context, Output> {
     #[doc(hidden)]
-    fn parse_choice(&self, context: &mut Ctx) -> Option<Output>;
+    fn parse_choice(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
 }
 
 macro_rules! impl_choice {
@@ -131,18 +80,19 @@ macro_rules! impl_choice {
         ParserTuple<Ctx, Output> for ($($parser,)*)
         where
             Ctx: Context,
-            $($parser: ParserOptional<Ctx, Output>,)*
+            $($parser: Parser< Ctx, Output>,)*
         {
-            fn parse_choice(&self, context: &mut Ctx) -> Option<Output> {
+            fn parse_choice(&self, context: &mut Ctx) -> ParseResult<Ctx, Output> {
                 $(
                     let start = context.location();
-                    if let Some(output) = self.$n.parse(context) {
-                        return Some(output);
+                    let result = self.$n.parse(context);
+                    if result.is_ok() {
+                        return result;
                     }
                     context.set_location(start);
                 )*
 
-                None
+                ParseResult::err(None)
             }
         }
     };
