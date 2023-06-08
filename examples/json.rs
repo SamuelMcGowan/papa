@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
-use papa::combinator::choice;
 use papa::context::VecContext;
-use papa::parser::Parser;
-use papa::primitive::nothing;
-use papa::recursive::recursive;
+use papa::prelude::*;
 
 pub fn main() {
     let s = "{}";
