@@ -12,8 +12,24 @@ pub struct ParseResult<C: Context, Output> {
 }
 
 impl<C: Context, Output> ParseResult<C, Output> {
+    pub fn err(err: Option<C::Error>) -> Self {
+        Self { inner: Err(None) }
+    }
+
+    pub fn ok(output: Option<Output>) -> Self {
+        Self { inner: Ok(output) }
+    }
+
     pub fn to_result(self) -> Result<Option<Output>, Option<C::Error>> {
         self.inner
+    }
+
+    pub fn is_ok(&self) -> bool {
+        self.inner.is_ok()
+    }
+
+    pub fn is_err(&self) -> bool {
+        self.inner.is_err()
     }
 }
 
