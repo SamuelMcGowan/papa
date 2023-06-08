@@ -20,7 +20,7 @@ impl<C: Context> Parser for Any<C> {
 
     #[inline]
     fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
-        ParseResult::from_output(context.next())
+        context.next().into()
     }
 }
 
@@ -40,7 +40,7 @@ impl<C: Context> Parser for Nothing<C> {
     type Output = ();
 
     fn parse(&self, _context: &mut Self::Context) -> ParseResult<C, Self::Output> {
-        ParseResult::empty()
+        ().into()
     }
 }
 
@@ -74,7 +74,7 @@ where
     type Output = C::Token;
 
     fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
-        ParseResult::from_output(context.eat_if(self.pred))
+        context.eat_if(self.pred).into()
     }
 }
 
