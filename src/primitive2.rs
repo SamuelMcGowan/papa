@@ -16,13 +16,11 @@ pub struct Any<C: Context> {
 
 impl<C: Context> Parser for Any<C> {
     type Context = C;
-
-    type Result = Option<C::Token>;
     type Output = C::Token;
 
     #[inline]
-    fn parse(&self, context: &mut Self::Context) -> Option<Self::Output> {
-        context.next()
+    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+        ParseResult::from_output(context.next())
     }
 }
 
@@ -39,11 +37,11 @@ pub struct Nothing<C: Context> {
 
 impl<C: Context> Parser for Nothing<C> {
     type Context = C;
-
-    type Result = ();
     type Output = ();
 
-    fn parse(&self, _context: &mut Self::Context) -> Self::Result {}
+    fn parse(&self, _context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+        ParseResult::empty()
+    }
 }
 
 /// Parse a token if it matches a predicate.
@@ -73,21 +71,18 @@ where
     F: Fn(&C::Token) -> bool + Copy,
 {
     type Context = C;
-
-    type Result = Option<C::Token>;
     type Output = C::Token;
 
-    fn parse(&self, context: &mut Self::Context) -> Self::Result {
-        context.eat_if(self.pred)
+    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+        ParseResult::from_output(context.eat_if(self.pred))
     }
 }
 
 /// Construct a parser from a function.
-pub fn func<C, F, Result, Output>(f: F) -> FuncParser<C, F, Result, Output>
+pub fn func<C, F, Output>(f: F) -> FuncParser<C, F, Output>
 where
     C: Context,
-    F: Fn(&mut C) -> Result,
-    Result: ParseResult<C, Output>,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
 {
     FuncParser {
         f,
@@ -95,28 +90,24 @@ where
     }
 }
 
-pub struct FuncParser<C, F, Result, Output>
+pub struct FuncParser<C, F, Output>
 where
     C: Context,
-    F: Fn(&mut C) -> Result,
-    Result: ParseResult<C, Output>,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
 {
     f: F,
-    _phantom: PhantomData<*const (C, Result, Output)>,
+    _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C, F, Result, Output> Parser for FuncParser<C, F, Result, Output>
+impl<C, F, Output> Parser for FuncParser<C, F, Output>
 where
     C: Context,
-    F: Fn(&mut C) -> Result,
-    Result: ParseResult<C, Output>,
+    F: Fn(&mut C) -> ParseResult<C, Output>,
 {
     type Context = C;
-
-    type Result = Result;
     type Output = Output;
 
-    fn parse(&self, context: &mut Self::Context) -> Self::Result {
+    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
         (self.f)(context)
     }
 }

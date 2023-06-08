@@ -1,4 +1,5 @@
 pub mod combinator;
+pub mod combinator2;
 pub mod context;
 pub mod parser;
 pub mod parser2;

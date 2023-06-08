@@ -2,31 +2,42 @@ use crate::context::Context;
 
 pub trait Parser {
     type Context: Context;
-
-    type Result: ParseResult<Self::Context, Self::Output>;
     type Output;
 
-    fn parse(&self, context: &mut Self::Context) -> Self::Result;
+    fn parse(&self, context: &mut Self::Context) -> ParseResult<Self::Context, Self::Output>;
 }
 
-pub trait ParseResult<C: Context, Output> {
-    fn to_result(self) -> Result<Output, Option<C::Error>>;
+pub struct ParseResult<C: Context, T> {
+    pub output: Option<T>,
+    pub error: Option<C::Error>,
 }
 
-impl<C: Context, Output> ParseResult<C, Output> for Result<Output, C::Error> {
-    fn to_result(self) -> Result<Output, Option<C::Error>> {
-        self.map_err(Some)
+impl<C: Context, T> ParseResult<C, T> {
+    pub fn empty() -> Self {
+        Self {
+            output: None,
+            error: None,
+        }
     }
-}
 
-impl<C: Context, Output> ParseResult<C, Output> for Option<Output> {
-    fn to_result(self) -> Result<Output, Option<C::Error>> {
-        self.ok_or(None)
+    pub fn from_output(ok: Option<T>) -> Self {
+        Self {
+            output: ok,
+            error: None,
+        }
     }
-}
 
-impl<C: Context> ParseResult<C, ()> for () {
-    fn to_result(self) -> Result<(), Option<C::Error>> {
-        Ok(())
+    pub fn from_err(err: Option<C::Error>) -> Self {
+        Self {
+            output: None,
+            error: err,
+        }
+    }
+
+    pub fn map<U>(self, f: impl Fn(T) -> U) -> ParseResult<C, U> {
+        ParseResult {
+            output: self.output.map(f),
+            error: self.error,
+        }
     }
 }
