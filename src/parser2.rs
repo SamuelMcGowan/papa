@@ -1,10 +1,7 @@
 use crate::context::Context;
 
-pub trait Parser {
-    type Context: Context;
-    type Output;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<Self::Context, Self::Output>;
+pub trait Parser<C: Context, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output>;
 }
 
 pub struct ParseResult<C: Context, Output> {
@@ -13,7 +10,7 @@ pub struct ParseResult<C: Context, Output> {
 
 impl<C: Context, Output> ParseResult<C, Output> {
     pub fn err(err: Option<C::Error>) -> Self {
-        Self { inner: Err(None) }
+        Self { inner: Err(err) }
     }
 
     pub fn ok(output: Option<Output>) -> Self {

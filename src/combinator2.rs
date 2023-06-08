@@ -6,7 +6,7 @@ use crate::parser2::{ParseResult, Parser};
 pub struct Map<C, P, OA, OB, F>
 where
     C: Context,
-    P: Parser<Context = C, Output = OA>,
+    P: Parser<C, OA>,
     F: Fn(OA) -> OB + Copy,
 {
     pub(crate) parser: P,
@@ -14,16 +14,13 @@ where
     pub(crate) _phantom: PhantomData<*const (C, OA, OB)>,
 }
 
-impl<C, P, OA, OB, F> Parser for Map<C, P, OA, OB, F>
+impl<C, P, OA, OB, F> Parser<C, OB> for Map<C, P, OA, OB, F>
 where
     C: Context,
-    P: Parser<Context = C, Output = OA>,
+    P: Parser<C, OA>,
     F: Fn(OA) -> OB + Copy,
 {
-    type Context = C;
-    type Output = OB;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, OB> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, OB> {
         self.parser.parse(context).map(self.map)
     }
 }
@@ -31,21 +28,18 @@ where
 pub struct Drop<C, P, Output>
 where
     C: Context,
-    P: Parser<Context = C, Output = Output>,
+    P: Parser<C, Output>,
 {
     pub(crate) parser: P,
     pub(crate) _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C, P, Output> Parser for Drop<C, P, Output>
+impl<C, P, Output> Parser<C, Output> for Drop<C, P, Output>
 where
     C: Context,
-    P: Parser<Context = C, Output = Output>,
+    P: Parser<C, Output>,
 {
-    type Context = C;
-    type Output = Output;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<Self::Context, Self::Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parser.parse(context);
         ().into()
     }
@@ -64,11 +58,10 @@ pub struct Choice<C: Context, Output, Parsers: ParserTuple<C, Output>> {
     _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser for Choice<C, Output, Parsers> {
-    type Context = C;
-    type Output = Output;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<Self::Context, Self::Output> {
+impl<C: Context, Output, Parsers: ParserTuple<C, Output>> Parser<C, Output>
+    for Choice<C, Output, Parsers>
+{
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parsers.parse_choice(context)
     }
 }
@@ -87,7 +80,7 @@ macro_rules! impl_choice {
         ParserTuple<Ctx, Output> for ($($parser,)*)
         where
             Ctx: Context,
-            $($parser: Parser<Context = Ctx, Output = Output>,)*
+            $($parser: Parser< Ctx, Output>,)*
         {
             fn parse_choice(&self, context: &mut Ctx) -> ParseResult<Ctx, Output> {
                 $(

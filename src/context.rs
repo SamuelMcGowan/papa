@@ -46,7 +46,7 @@ pub trait Context: Sized {
 
     fn spanned<P: Parser<Self, Output>, Output>(
         &mut self,
-        mut parser: P,
+        parser: P,
     ) -> (Output, Span<Self::Location>) {
         let start = self.location();
         let output = parser.parse(self);

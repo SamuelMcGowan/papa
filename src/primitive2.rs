@@ -14,12 +14,9 @@ pub struct Any<C: Context> {
     _phantom: PhantomData<*const C>,
 }
 
-impl<C: Context> Parser for Any<C> {
-    type Context = C;
-    type Output = C::Token;
-
+impl<C: Context> Parser<C, C::Token> for Any<C> {
     #[inline]
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
         context.next().into()
     }
 }
@@ -35,11 +32,8 @@ pub struct Nothing<C: Context> {
     _phantom: PhantomData<*const C>,
 }
 
-impl<C: Context> Parser for Nothing<C> {
-    type Context = C;
-    type Output = ();
-
-    fn parse(&self, _context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+impl<C: Context> Parser<C, ()> for Nothing<C> {
+    fn parse(&self, _context: &mut C) -> ParseResult<C, ()> {
         ().into()
     }
 }
@@ -65,15 +59,12 @@ where
     _phantom: PhantomData<*const C>,
 }
 
-impl<C, F> Parser for Pred<C, F>
+impl<C, F> Parser<C, C::Token> for Pred<C, F>
 where
     C: Context,
     F: Fn(&C::Token) -> bool + Copy,
 {
-    type Context = C;
-    type Output = C::Token;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
         context.eat_if(self.pred).into()
     }
 }
@@ -99,15 +90,12 @@ where
     _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C, F, Output> Parser for FuncParser<C, F, Output>
+impl<C, F, Output> Parser<C, Output> for FuncParser<C, F, Output>
 where
     C: Context,
     F: Fn(&mut C) -> ParseResult<C, Output>,
 {
-    type Context = C;
-    type Output = Output;
-
-    fn parse(&self, context: &mut Self::Context) -> ParseResult<C, Self::Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         (self.f)(context)
     }
 }
