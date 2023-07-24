@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::combinator::{Drop, Map};
+use crate::combinator::{Drop, Map, RepetitionBuilder};
 use crate::context::Context;
 
 pub trait Parser<C: Context, Output> {
@@ -24,6 +24,18 @@ pub trait Parser<C: Context, Output> {
     {
         Drop {
             parser: self,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn repeat(self) -> RepetitionBuilder<C, Self, Output>
+    where
+        Self: Sized,
+    {
+        RepetitionBuilder {
+            parser: self,
+            min: 0,
+            max: None,
             _phantom: PhantomData,
         }
     }
