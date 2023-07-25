@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub fn ident<'a, C: Context<'a, Token = char, Slice = Slice>, Slice>(
+pub fn ident<'a, C: Context<'a, Token = char, Slice = Slice>, Slice: ?Sized>(
 ) -> impl Parser<'a, C, &'a Slice> {
     chain((pred(is_ident_start), pred(is_ident).repeat())).to_slice()
 }
