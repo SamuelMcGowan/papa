@@ -2,21 +2,21 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-pub struct Filter<'a, C, P, Output, F>
+pub struct Filter<C, P, Output, F>
 where
     C: Context,
-    P: Parser<'a, C, Output>,
+    P: Parser<C, Output>,
     F: Fn(&Output) -> bool,
 {
     pub(crate) parser: P,
     pub(crate) filter: F,
-    pub(crate) _phantom: PhantomData<&'a (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<'a, C, P, Output, F> Parser<'a, C, Output> for Filter<'a, C, P, Output, F>
+impl<C, P, Output, F> Parser<C, Output> for Filter<C, P, Output, F>
 where
     C: Context,
-    P: Parser<'a, C, Output>,
+    P: Parser<C, Output>,
     F: Fn(&Output) -> bool,
 {
     fn parse(&self, context: &mut C) -> ParseResult<C, Output> {

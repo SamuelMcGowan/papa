@@ -2,13 +2,13 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-pub struct Spanned<'a, C: Context, P: Parser<'a, C, Output>, Output> {
+pub struct Spanned<C: Context, P: Parser<C, Output>, Output> {
     pub(crate) parser: P,
-    pub(crate) _phantom: PhantomData<&'a (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<'a, C: Context, P: Parser<'a, C, Output>, Output> Parser<'a, C, (Span<C::Location>, Output)>
-    for Spanned<'a, C, P, Output>
+impl<C: Context, P: Parser<C, Output>, Output> Parser<C, (Span<C::Location>, Output)>
+    for Spanned<C, P, Output>
 {
     fn parse(&self, context: &mut C) -> ParseResult<C, (Span<C::Location>, Output)> {
         let start = context.location();

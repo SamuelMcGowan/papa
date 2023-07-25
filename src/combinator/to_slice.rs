@@ -2,14 +2,12 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-pub struct ToSlice<'a, C: Context, P: Parser<'a, C, Output>, Output> {
+pub struct ToSlice<C: Context, P: Parser<C, Output>, Output> {
     pub(crate) parser: P,
-    pub(crate) _phantom: PhantomData<&'a (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<'a, C: Context, P: Parser<'a, C, Output>, Output> Parser<'a, C, C::Slice>
-    for ToSlice<'a, C, P, Output>
-{
+impl<C: Context, P: Parser<C, Output>, Output> Parser<C, C::Slice> for ToSlice<C, P, Output> {
     fn parse(&self, context: &mut C) -> ParseResult<C, C::Slice> {
         let start = context.location();
         let output = self.parser.parse(context);

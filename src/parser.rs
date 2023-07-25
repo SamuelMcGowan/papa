@@ -8,12 +8,12 @@ use crate::combinator::spanned::Spanned;
 use crate::combinator::to_slice::ToSlice;
 use crate::context::Context;
 
-pub trait Parser<'a, C: Context, Output> {
+pub trait Parser<C: Context, Output> {
     /// Run this parser.
     fn parse(&self, context: &mut C) -> ParseResult<C, Output>;
 
     /// Map the output of this parser to some other value.
-    fn map<F, OutputB>(self, f: F) -> Map<'a, C, Self, Output, OutputB, F>
+    fn map<F, OutputB>(self, f: F) -> Map<C, Self, Output, OutputB, F>
     where
         Self: Sized,
         F: Fn(Output) -> OutputB + Copy,
@@ -26,7 +26,7 @@ pub trait Parser<'a, C: Context, Output> {
     }
 
     /// Decide whether to accept an output.
-    fn filter<F>(self, f: F) -> Filter<'a, C, Self, Output, F>
+    fn filter<F>(self, f: F) -> Filter<C, Self, Output, F>
     where
         Self: Sized,
         F: Fn(&Output) -> bool,
@@ -39,7 +39,7 @@ pub trait Parser<'a, C: Context, Output> {
     }
 
     /// Convert the output of this parser to `()`.
-    fn drop(self) -> Drop<'a, C, Self, Output>
+    fn drop(self) -> Drop<C, Self, Output>
     where
         Self: Sized,
     {
@@ -56,7 +56,7 @@ pub trait Parser<'a, C: Context, Output> {
     ///
     /// Has no output by default. To output as a collection, call `collect` on
     /// it.
-    fn repeat(self) -> Repeat<'a, C, Self, Output, NoRepeatOutput>
+    fn repeat(self) -> Repeat<C, Self, Output, NoRepeatOutput>
     where
         Self: Sized,
     {
@@ -71,7 +71,7 @@ pub trait Parser<'a, C: Context, Output> {
     /// Get the span of the matched input.
     ///
     /// Has an output of form `(span, output)`.
-    fn spanned(self) -> Spanned<'a, C, Self, Output>
+    fn spanned(self) -> Spanned<C, Self, Output>
     where
         Self: Sized,
     {
@@ -82,7 +82,7 @@ pub trait Parser<'a, C: Context, Output> {
     }
 
     /// Convert the output to a slice of the matched input.
-    fn to_slice(self) -> ToSlice<'a, C, Self, Output>
+    fn to_slice(self) -> ToSlice<C, Self, Output>
     where
         Self: Sized,
     {

@@ -32,7 +32,7 @@ enum Json {
     Null,
 }
 
-fn parse_value<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_value<'a>() -> impl Parser<Ctx<'a>, Json> {
     recursive(|expr| {
         choice((
             parse_object(expr.clone()),
@@ -45,30 +45,30 @@ fn parse_value<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
     })
 }
 
-fn parse_object<'a>(expr: impl Parser<'a, Ctx<'a>, Json>) -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_object<'a>(expr: impl Parser<Ctx<'a>, Json>) -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn parse_array<'a>(expr: impl Parser<'a, Ctx<'a>, Json>) -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_array<'a>(expr: impl Parser<Ctx<'a>, Json>) -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn parse_string<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_string<'a>() -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn parse_number<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_number<'a>() -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn parse_bool<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_bool<'a>() -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn parse_null<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn parse_null<'a>() -> impl Parser<Ctx<'a>, Json> {
     dummy_parser()
 }
 
-fn dummy_parser<'a>() -> impl Parser<'a, Ctx<'a>, Json> {
+fn dummy_parser<'a>() -> impl Parser<Ctx<'a>, Json> {
     nothing().map(|_| Json::Null)
 }

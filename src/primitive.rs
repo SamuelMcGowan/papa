@@ -4,17 +4,17 @@ use crate::context::Context;
 use crate::parser::{ParseResult, Parser};
 
 /// Parse any token.
-pub fn any<'a, C: Context>() -> Any<'a, C> {
+pub fn any<C: Context>() -> Any<C> {
     Any {
         _phantom: PhantomData,
     }
 }
 
-pub struct Any<'a, C: Context> {
-    _phantom: PhantomData<&'a C>,
+pub struct Any<C: Context> {
+    _phantom: PhantomData<*const C>,
 }
 
-impl<'a, C: Context> Parser<'a, C, C::Token> for Any<'a, C> {
+impl<C: Context> Parser<C, C::Token> for Any<C> {
     #[inline]
     fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
         context.next().ok_or(None)
@@ -22,24 +22,24 @@ impl<'a, C: Context> Parser<'a, C, C::Token> for Any<'a, C> {
 }
 
 /// Don't do anything, just output `()`.
-pub fn nothing<'a, C: Context>() -> Nothing<'a, C> {
+pub fn nothing<C: Context>() -> Nothing<C> {
     Nothing {
         _phantom: PhantomData,
     }
 }
 
-pub struct Nothing<'a, C: Context> {
-    _phantom: PhantomData<&'a C>,
+pub struct Nothing<C: Context> {
+    _phantom: PhantomData<*const C>,
 }
 
-impl<'a, C: Context> Parser<'a, C, ()> for Nothing<'a, C> {
+impl<C: Context> Parser<C, ()> for Nothing<C> {
     fn parse(&self, _context: &mut C) -> ParseResult<C, ()> {
         Ok(())
     }
 }
 
 /// Parse a token if it matches a predicate.
-pub fn pred<'a, C, F>(pred: F) -> Pred<'a, C, F>
+pub fn pred<C, F>(pred: F) -> Pred<C, F>
 where
     C: Context,
     F: Fn(&C::Token) -> bool + Copy,
@@ -50,16 +50,16 @@ where
     }
 }
 
-pub struct Pred<'a, C, F>
+pub struct Pred<C, F>
 where
     C: Context,
     F: Fn(&C::Token) -> bool + Copy,
 {
     pred: F,
-    _phantom: PhantomData<&'a C>,
+    _phantom: PhantomData<*const C>,
 }
 
-impl<'a, C, F> Parser<'a, C, C::Token> for Pred<'a, C, F>
+impl<C, F> Parser<C, C::Token> for Pred<C, F>
 where
     C: Context,
     F: Fn(&C::Token) -> bool + Copy,
@@ -73,7 +73,7 @@ where
 }
 
 /// Construct a parser from a function.
-pub fn func<'a, C, F, Output>(f: F) -> FuncParser<'a, C, F, Output>
+pub fn func<C, F, Output>(f: F) -> FuncParser<C, F, Output>
 where
     C: Context,
     F: Fn(&mut C) -> ParseResult<C, Output>,
@@ -84,16 +84,16 @@ where
     }
 }
 
-pub struct FuncParser<'a, C, F, Output>
+pub struct FuncParser<C, F, Output>
 where
     C: Context,
     F: Fn(&mut C) -> ParseResult<C, Output>,
 {
     f: F,
-    _phantom: PhantomData<&'a (C, Output)>,
+    _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<'a, C, F, Output> Parser<'a, C, Output> for FuncParser<'a, C, F, Output>
+impl<C, F, Output> Parser<C, Output> for FuncParser<C, F, Output>
 where
     C: Context,
     F: Fn(&mut C) -> ParseResult<C, Output>,

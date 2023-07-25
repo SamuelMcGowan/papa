@@ -2,21 +2,15 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-pub struct Repeat<
-    'a,
-    C: Context,
-    P: Parser<'a, C, Output>,
-    Output,
-    Collection: FromIterator<Output>,
-> {
+pub struct Repeat<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>> {
     pub(crate) parser: P,
     pub(crate) min: usize,
     pub(crate) max: Option<usize>,
-    pub(crate) _phantom: PhantomData<&'a (C, Output, Collection)>,
+    pub(crate) _phantom: PhantomData<*const (C, Output, Collection)>,
 }
 
-impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection: FromIterator<Output>>
-    Repeat<'a, C, P, Output, Collection>
+impl<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>>
+    Repeat<C, P, Output, Collection>
 {
     /// Set the minimum number of times to match.
     pub fn min(mut self, min: usize) -> Self {
@@ -31,7 +25,7 @@ impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection: FromIterator<
     }
 
     /// Collect the output of this parser.
-    pub fn collect<Dest>(self) -> Repeat<'a, C, P, Output, Dest>
+    pub fn collect<Dest>(self) -> Repeat<C, P, Output, Dest>
     where
         Dest: FromIterator<Output>,
     {
@@ -44,8 +38,8 @@ impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection: FromIterator<
     }
 }
 
-impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection> Parser<'a, C, Collection>
-    for Repeat<'a, C, P, Output, Collection>
+impl<C: Context, P: Parser<C, Output>, Output, Collection> Parser<C, Collection>
+    for Repeat<C, P, Output, Collection>
 where
     Collection: FromIterator<Output>,
 {

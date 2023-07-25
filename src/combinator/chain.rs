@@ -4,22 +4,20 @@ use paste::paste;
 
 use crate::prelude::*;
 
-pub fn chain<'a, C: Context, P: ChainParsers<'a, C, Output>, Output>(
-    parsers: P,
-) -> Chain<'a, C, Output, P> {
+pub fn chain<C: Context, P: ChainParsers<C, Output>, Output>(parsers: P) -> Chain<C, Output, P> {
     Chain {
         parsers,
         _phantom: PhantomData,
     }
 }
 
-pub struct Chain<'a, C: Context, Output, Parsers: ChainParsers<'a, C, Output>> {
+pub struct Chain<C: Context, Output, Parsers: ChainParsers<C, Output>> {
     parsers: Parsers,
-    _phantom: PhantomData<&'a (C, Output)>,
+    _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<'a, C: Context, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a, C, Output>
-    for Chain<'a, C, Output, Parsers>
+impl<C: Context, Output, Parsers: ChainParsers<C, Output>> Parser<C, Output>
+    for Chain<C, Output, Parsers>
 {
     fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parsers.parse_chain(context)
@@ -29,18 +27,18 @@ impl<'a, C: Context, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a, C,
 /// A tuple of [`Parser`]s, to be passed to [`chain`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ChainParsers<'a, Ctx: Context, Output> {
+pub trait ChainParsers<Ctx: Context, Output> {
     #[doc(hidden)]
     fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
 }
 
 macro_rules! impl_chain {
     ($($n:tt $parser:ident),*) => { paste!{
-        impl<'a, Ctx, $($parser, [<$parser Out>],)*>
-        ChainParsers<'a, Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
+        impl<Ctx, $($parser, [<$parser Out>],)*>
+        ChainParsers<Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
         where
             Ctx: Context,
-            $($parser: Parser<'a, Ctx, [<$parser Out>]>,)*
+            $($parser: Parser<Ctx, [<$parser Out>]>,)*
         {
             fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx,($([<$parser Out>],)*)> {
                 let start = context.location();
