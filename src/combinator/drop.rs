@@ -18,6 +18,6 @@ where
 {
     fn parse(&self, context: &mut C) -> ParseResult<'a, C, ()> {
         self.parser.parse(context);
-        ().into()
+        Ok(())
     }
 }

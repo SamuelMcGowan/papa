@@ -20,10 +20,12 @@ where
     F: Fn(&Output) -> bool,
 {
     fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
-        match self.parser.parse(context).to_result() {
-            Ok(output) if (self.filter)(&output) => ParseResult::ok(output),
-            Ok(_) => ParseResult::err(None),
-            Err(err) => ParseResult::err(err),
-        }
+        self.parser.parse(context).and_then(|output| {
+            if (self.filter)(&output) {
+                Ok(output)
+            } else {
+                Err(None)
+            }
+        })
     }
 }

@@ -17,7 +17,7 @@ pub struct Any<'a, C: Context<'a>> {
 impl<'a, C: Context<'a>> Parser<'a, C, C::Token> for Any<'a, C> {
     #[inline]
     fn parse(&self, context: &mut C) -> ParseResult<'a, C, C::Token> {
-        context.next().into()
+        context.next().ok_or(None)
     }
 }
 
@@ -34,7 +34,7 @@ pub struct Nothing<'a, C: Context<'a>> {
 
 impl<'a, C: Context<'a>> Parser<'a, C, ()> for Nothing<'a, C> {
     fn parse(&self, _context: &mut C) -> ParseResult<'a, C, ()> {
-        ().into()
+        Ok(())
     }
 }
 
@@ -66,8 +66,8 @@ where
 {
     fn parse(&self, context: &mut C) -> ParseResult<'a, C, C::Token> {
         match context.peek() {
-            Some(token) if (self.pred)(token) => context.next().into(),
-            _ => ParseResult::err(None),
+            Some(token) if (self.pred)(token) => context.next().ok_or(None),
+            _ => Err(None),
         }
     }
 }
@@ -90,7 +90,7 @@ where
     F: Fn(&mut C) -> ParseResult<'a, C, Output>,
 {
     f: F,
-    _phantom: PhantomData<*const (C, Output)>,
+    _phantom: PhantomData<&'a (C, Output)>,
 }
 
 impl<'a, C, F, Output> Parser<'a, C, Output> for FuncParser<'a, C, F, Output>

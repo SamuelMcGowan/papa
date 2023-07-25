@@ -10,7 +10,7 @@ pub fn main() {
 
     let mut ctx = Ctx::new(&chars);
 
-    let json = parse_value().parse(&mut ctx).to_result();
+    let json = parse_value().parse(&mut ctx);
 
     for error in ctx.errors() {
         eprintln!("{error:?}");

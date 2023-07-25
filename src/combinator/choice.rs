@@ -51,7 +51,7 @@ macro_rules! impl_choice {
                     context.set_location(start);
                 )*
 
-                ParseResult::err(None)
+                Err(None)
             }
         }
     };

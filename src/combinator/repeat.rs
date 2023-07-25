@@ -54,7 +54,7 @@ where
         let mut num_matches = 0;
 
         let parse_iter = std::iter::from_fn(|| {
-            let output = self.parser.parse(context).to_result().ok()?;
+            let output = self.parser.parse(context).ok()?;
             num_matches += 1;
             Some(output)
         });
@@ -67,9 +67,9 @@ where
 
         if num_matches < self.min {
             context.set_location(start);
-            ParseResult::err(None)
+            Err(None)
         } else {
-            ParseResult::ok(collection)
+            Ok(collection)
         }
     }
 }

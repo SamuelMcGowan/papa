@@ -46,16 +46,16 @@ macro_rules! impl_chain {
                 let start = context.location();
 
                 $(
-                    let [<$parser:lower _out>] = match self.$n.parse(context).to_result() {
+                    let [<$parser:lower _out>] = match self.$n.parse(context) {
                          Ok(output) => output,
                          Err(err) => {
                              context.set_location(start);
-                             return ParseResult::err(err);
+                             return Err(err);
                          }
                     };
                 )*
 
-                ParseResult::ok(($([<$parser:lower _out>],)*))
+                Ok(($([<$parser:lower _out>],)*))
             }
         }
     } };
