@@ -1,25 +1,27 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub struct Filter<C, P, Output, F>
+pub struct Filter<In, Out, Error, P, F>
 where
-    C: Context,
-    P: Parser<C, Output>,
-    F: Fn(&Output) -> bool,
+    In: Slice,
+    P: Parser<In, Out, Error>,
+    F: Fn(&Out) -> bool,
 {
     pub(crate) parser: P,
     pub(crate) filter: F,
-    pub(crate) _phantom: PhantomData<*const (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C, P, Output, F> Parser<C, Output> for Filter<C, P, Output, F>
+impl<In, Out, Error, P, F> Parser<In, Out, Error> for Filter<In, Out, Error, P, F>
 where
-    C: Context,
-    P: Parser<C, Output>,
-    F: Fn(&Output) -> bool,
+    In: Slice,
+    P: Parser<In, Out, Error>,
+    F: Fn(&Out) -> bool,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
         self.parser.parse(context).and_then(|output| {
             if (self.filter)(&output) {
                 Ok(output)

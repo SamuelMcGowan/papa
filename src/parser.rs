@@ -6,17 +6,18 @@ use crate::combinator::map::Map;
 use crate::combinator::repeat::{NoRepeatOutput, Repeat};
 use crate::combinator::spanned::Spanned;
 use crate::combinator::to_slice::ToSlice;
+use crate::context::slice::Slice;
 use crate::context::Context;
 
-pub trait Parser<C: Context, Output> {
+pub trait Parser<In: Slice, Out, Error> {
     /// Run this parser.
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output>;
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error>;
 
     /// Map the output of this parser to some other value.
-    fn map<F, OutputB>(self, f: F) -> Map<C, Self, Output, OutputB, F>
+    fn map<F, OutputB>(self, f: F) -> Map<In, Out, OutputB, Error, Self, F>
     where
         Self: Sized,
-        F: Fn(Output) -> OutputB + Copy,
+        F: Fn(Out) -> OutputB + Copy,
     {
         Map {
             parser: self,
@@ -26,10 +27,10 @@ pub trait Parser<C: Context, Output> {
     }
 
     /// Decide whether to accept an output.
-    fn filter<F>(self, f: F) -> Filter<C, Self, Output, F>
+    fn filter<F>(self, f: F) -> Filter<In, Out, Error, Self, F>
     where
         Self: Sized,
-        F: Fn(&Output) -> bool,
+        F: Fn(&Out) -> bool,
     {
         Filter {
             parser: self,
@@ -39,7 +40,7 @@ pub trait Parser<C: Context, Output> {
     }
 
     /// Convert the output of this parser to `()`.
-    fn drop(self) -> Drop<C, Self, Output>
+    fn drop(self) -> Drop<In, Out, Error, Self>
     where
         Self: Sized,
     {
@@ -56,7 +57,7 @@ pub trait Parser<C: Context, Output> {
     ///
     /// Has no output by default. To output as a collection, call `collect` on
     /// it.
-    fn repeat(self) -> Repeat<C, Self, Output, NoRepeatOutput>
+    fn repeat(self) -> Repeat<In, Out, Error, Self, NoRepeatOutput>
     where
         Self: Sized,
     {
@@ -71,7 +72,7 @@ pub trait Parser<C: Context, Output> {
     /// Get the span of the matched input.
     ///
     /// Has an output of form `(span, output)`.
-    fn spanned(self) -> Spanned<C, Self, Output>
+    fn spanned(self) -> Spanned<In, Out, Error, Self>
     where
         Self: Sized,
     {
@@ -82,7 +83,7 @@ pub trait Parser<C: Context, Output> {
     }
 
     /// Convert the output to a slice of the matched input.
-    fn to_slice(self) -> ToSlice<C, Self, Output>
+    fn to_slice(self) -> ToSlice<In, Out, Error, Self>
     where
         Self: Sized,
     {
@@ -93,4 +94,4 @@ pub trait Parser<C: Context, Output> {
     }
 }
 
-pub type ParseResult<C, Output> = Result<Output, Option<<C as Context>::Error>>;
+pub type ParseResult<Out, Error> = Result<Out, Option<Error>>;

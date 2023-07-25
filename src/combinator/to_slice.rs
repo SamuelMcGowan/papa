@@ -1,16 +1,25 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub struct ToSlice<C: Context, P: Parser<C, Output>, Output> {
+pub struct ToSlice<In: Slice, Out, Error, P: Parser<In, Out, Error>> {
     pub(crate) parser: P,
-    pub(crate) _phantom: PhantomData<*const (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C: Context, P: Parser<C, Output>, Output> Parser<C, C::Slice> for ToSlice<C, P, Output> {
-    fn parse(&self, context: &mut C) -> ParseResult<C, C::Slice> {
+impl<In: Slice, Out, Error, P: Parser<In, Out, Error>> Parser<In, In, Error>
+    for ToSlice<In, Out, Error, P>
+{
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<In, Error> {
         let start = context.location();
         let output = self.parser.parse(context);
-        output.map(|_| context.slice(start, context.location()))
+        output.map(|_| {
+            context
+                .slice_all()
+                .slice(start, context.location())
+                .unwrap()
+        })
     }
 }

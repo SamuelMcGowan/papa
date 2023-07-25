@@ -1,24 +1,28 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
 /// A parser that tries to parse one of a tuple of parsers.
-pub fn choice<C: Context, P: ChoiceParsers<C, Output>, Output>(parsers: P) -> Choice<C, Output, P> {
+pub fn choice<In: Slice, Out, Error, P: ChoiceParsers<In, Out, Error>>(
+    parsers: P,
+) -> Choice<In, Out, Error, P> {
     Choice {
         parsers,
         _phantom: PhantomData,
     }
 }
 
-pub struct Choice<C: Context, Output, Parsers: ChoiceParsers<C, Output>> {
+pub struct Choice<In: Slice, Out, Error, Parsers: ChoiceParsers<In, Out, Error>> {
     parsers: Parsers,
-    _phantom: PhantomData<*const (C, Output)>,
+    _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C: Context, Output, Parsers: ChoiceParsers<C, Output>> Parser<C, Output>
-    for Choice<C, Output, Parsers>
+impl<In: Slice, Out, Error, Parsers: ChoiceParsers<In, Out, Error>> Parser<In, Out, Error>
+    for Choice<In, Out, Error, Parsers>
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
         self.parsers.parse_choice(context)
     }
 }
@@ -26,20 +30,20 @@ impl<C: Context, Output, Parsers: ChoiceParsers<C, Output>> Parser<C, Output>
 /// A tuple of [`Parser`]s, to be passed to [`choice`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ChoiceParsers<Ctx: Context, Output> {
+pub trait ChoiceParsers<In: Slice, Out, Error> {
     #[doc(hidden)]
-    fn parse_choice(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
+    fn parse_choice(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error>;
 }
 
 macro_rules! impl_choice {
     ($($n:tt $parser:ident),*) => {
-        impl<Ctx, Output, $($parser,)*>
-        ChoiceParsers<Ctx, Output> for ($($parser,)*)
+        impl<In, Out, Error, $($parser,)*>
+        ChoiceParsers<In, Out, Error> for ($($parser,)*)
         where
-            Ctx: Context,
-            $($parser: Parser<Ctx, Output>,)*
+            In: Slice,
+            $($parser: Parser<In, Out, Error>,)*
         {
-            fn parse_choice(&self, context: &mut Ctx) -> ParseResult<Ctx, Output> {
+            fn parse_choice(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
                 $(
                     let start = context.location();
                     let result = self.$n.parse(context);

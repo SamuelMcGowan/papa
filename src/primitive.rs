@@ -1,48 +1,48 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
 use crate::context::Context;
 use crate::parser::{ParseResult, Parser};
 
 /// Parse any token.
-pub fn any<C: Context>() -> Any<C> {
+pub fn any<In: Slice, Error>() -> Any<In, Error> {
     Any {
         _phantom: PhantomData,
     }
 }
 
-pub struct Any<C: Context> {
-    _phantom: PhantomData<*const C>,
+pub struct Any<In: Slice, Error> {
+    _phantom: PhantomData<*const (In, Error)>,
 }
 
-impl<C: Context> Parser<C, C::Token> for Any<C> {
+impl<In: Slice, Error> Parser<In, In::Token, Error> for Any<In, Error> {
     #[inline]
-    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<In::Token, Error> {
         context.next().ok_or(None)
     }
 }
 
 /// Don't do anything, just output `()`.
-pub fn nothing<C: Context>() -> Nothing<C> {
+pub fn nothing<In: Slice, Error>() -> Nothing<In, Error> {
     Nothing {
         _phantom: PhantomData,
     }
 }
 
-pub struct Nothing<C: Context> {
-    _phantom: PhantomData<*const C>,
+pub struct Nothing<In: Slice, Error> {
+    _phantom: PhantomData<*const (In, Error)>,
 }
 
-impl<C: Context> Parser<C, ()> for Nothing<C> {
-    fn parse(&self, _context: &mut C) -> ParseResult<C, ()> {
+impl<In: Slice, Error> Parser<In, (), Error> for Nothing<In, Error> {
+    fn parse(&self, _context: &mut Context<In, Error>) -> ParseResult<(), Error> {
         Ok(())
     }
 }
 
 /// Parse a token if it matches a predicate.
-pub fn pred<C, F>(pred: F) -> Pred<C, F>
+pub fn pred<In: Slice, Error, F>(pred: F) -> Pred<In, Error, F>
 where
-    C: Context,
-    F: Fn(C::Token) -> bool + Copy,
+    F: Fn(In::Token) -> bool + Copy,
 {
     Pred {
         pred,
@@ -50,21 +50,21 @@ where
     }
 }
 
-pub struct Pred<C, F>
+pub struct Pred<In, Error, F>
 where
-    C: Context,
-    F: Fn(C::Token) -> bool + Copy,
+    In: Slice,
+    F: Fn(In::Token) -> bool + Copy,
 {
     pred: F,
-    _phantom: PhantomData<*const C>,
+    _phantom: PhantomData<*const (In, Error)>,
 }
 
-impl<C, F> Parser<C, C::Token> for Pred<C, F>
+impl<In, Error, F> Parser<In, In::Token, Error> for Pred<In, Error, F>
 where
-    C: Context,
-    F: Fn(C::Token) -> bool + Copy,
+    In: Slice,
+    F: Fn(In::Token) -> bool + Copy,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<In::Token, Error> {
         let start = context.location();
 
         match context.next() {
@@ -78,10 +78,10 @@ where
 }
 
 /// Construct a parser from a function.
-pub fn func<C, F, Output>(f: F) -> FuncParser<C, F, Output>
+pub fn func<In, Out, Error, F>(f: F) -> FuncParser<In, Out, Error, F>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    In: Slice,
+    F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
     FuncParser {
         f,
@@ -89,21 +89,21 @@ where
     }
 }
 
-pub struct FuncParser<C, F, Output>
+pub struct FuncParser<In, Out, Error, F>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    In: Slice,
+    F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
     f: F,
-    _phantom: PhantomData<*const (C, Output)>,
+    _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C, F, Output> Parser<C, Output> for FuncParser<C, F, Output>
+impl<In, Out, Error, F> Parser<In, Out, Error> for FuncParser<In, Out, Error, F>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    In: Slice,
+    F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
         (self.f)(context)
     }
 }

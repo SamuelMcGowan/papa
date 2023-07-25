@@ -47,6 +47,8 @@ pub trait Location: Copy + Eq + Ord + fmt::Debug {
 
     fn start() -> Self;
 
+    fn add(self, other: Self) -> Self;
+
     fn abs_diff(self, other: Self) -> Self::Diff;
 }
 
@@ -58,6 +60,10 @@ macro_rules! impl_loc {
 
                 fn start() -> Self {
                     0
+                }
+
+                fn add(self, other: Self) -> Self {
+                    self + other
                 }
 
                 fn abs_diff(self, other: Self) -> Self::Diff {

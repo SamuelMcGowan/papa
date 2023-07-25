@@ -1,25 +1,27 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub struct Map<C, P, OA, OB, F>
+pub struct Map<In, OA, OB, Error, P, F>
 where
-    C: Context,
-    P: Parser<C, OA>,
+    In: Slice,
+    P: Parser<In, OA, Error>,
     F: Fn(OA) -> OB + Copy,
 {
     pub(crate) parser: P,
     pub(crate) map: F,
-    pub(crate) _phantom: PhantomData<*const (C, OA, OB)>,
+    pub(crate) _phantom: PhantomData<*const (In, OA, OB, Error)>,
 }
 
-impl<C, P, OA, OB, F> Parser<C, OB> for Map<C, P, OA, OB, F>
+impl<In, OA, OB, Error, P, F> Parser<In, OB, Error> for Map<In, OA, OB, Error, P, F>
 where
-    C: Context,
-    P: Parser<C, OA>,
+    In: Slice,
+    P: Parser<In, OA, Error>,
     F: Fn(OA) -> OB + Copy,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, OB> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<OB, Error> {
         self.parser.parse(context).map(self.map)
     }
 }

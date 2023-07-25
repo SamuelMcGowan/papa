@@ -2,24 +2,28 @@ use std::marker::PhantomData;
 
 use paste::paste;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub fn chain<C: Context, P: ChainParsers<C, Output>, Output>(parsers: P) -> Chain<C, Output, P> {
+pub fn chain<In: Slice, Out, Error, P: ChainParsers<In, Out, Error>>(
+    parsers: P,
+) -> Chain<In, Out, Error, P> {
     Chain {
         parsers,
         _phantom: PhantomData,
     }
 }
 
-pub struct Chain<C: Context, Output, Parsers: ChainParsers<C, Output>> {
+pub struct Chain<In: Slice, Out, Error, Parsers: ChainParsers<In, Out, Error>> {
     parsers: Parsers,
-    _phantom: PhantomData<*const (C, Output)>,
+    _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C: Context, Output, Parsers: ChainParsers<C, Output>> Parser<C, Output>
-    for Chain<C, Output, Parsers>
+impl<In: Slice, Out, Error, Parsers: ChainParsers<In, Out, Error>> Parser<In, Out, Error>
+    for Chain<In, Out, Error, Parsers>
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
         self.parsers.parse_chain(context)
     }
 }
@@ -27,20 +31,20 @@ impl<C: Context, Output, Parsers: ChainParsers<C, Output>> Parser<C, Output>
 /// A tuple of [`Parser`]s, to be passed to [`chain`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ChainParsers<Ctx: Context, Output> {
+pub trait ChainParsers<In: Slice, Out, Error> {
     #[doc(hidden)]
-    fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
+    fn parse_chain(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error>;
 }
 
 macro_rules! impl_chain {
     ($($n:tt $parser:ident),*) => { paste!{
-        impl<Ctx, $($parser, [<$parser Out>],)*>
-        ChainParsers<Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
+        impl<In, $($parser, [<$parser Out>],)* Error>
+        ChainParsers<In, ($([<$parser Out>],)*), Error> for ($($parser,)*)
         where
-            Ctx: Context,
-            $($parser: Parser<Ctx, [<$parser Out>]>,)*
+            In: Slice,
+            $($parser: Parser<In, [<$parser Out>], Error>,)*
         {
-            fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx,($([<$parser Out>],)*)> {
+            fn parse_chain(&self, context: &mut Context<In, Error>) -> ParseResult<($([<$parser Out>],)*), Error> {
                 let start = context.location();
 
                 $(

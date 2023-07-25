@@ -1,16 +1,21 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub struct Spanned<C: Context, P: Parser<C, Output>, Output> {
+pub struct Spanned<In: Slice, Out, Error, P: Parser<In, Out, Error>> {
     pub(crate) parser: P,
-    pub(crate) _phantom: PhantomData<*const (C, Output)>,
+    pub(crate) _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<C: Context, P: Parser<C, Output>, Output> Parser<C, (Span<C::Location>, Output)>
-    for Spanned<C, P, Output>
+impl<In: Slice, Out, Error, P: Parser<In, Out, Error>> Parser<In, (Span<In::Location>, Out), Error>
+    for Spanned<In, Out, Error, P>
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, (Span<C::Location>, Output)> {
+    fn parse(
+        &self,
+        context: &mut Context<In, Error>,
+    ) -> ParseResult<(Span<In::Location>, Out), Error> {
         let start = context.location();
         let output = self.parser.parse(context);
 

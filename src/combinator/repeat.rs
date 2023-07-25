@@ -1,16 +1,21 @@
 use std::marker::PhantomData;
 
+use crate::context::slice::Slice;
+use crate::context::Context;
 use crate::prelude::*;
 
-pub struct Repeat<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>> {
+pub struct Repeat<In: Slice, Out, Error, P: Parser<In, Out, Error>, Collection: FromIterator<Out>> {
     pub(crate) parser: P,
     pub(crate) min: usize,
     pub(crate) max: Option<usize>,
-    pub(crate) _phantom: PhantomData<*const (C, Output, Collection)>,
+    pub(crate) _phantom: PhantomData<*const (In, Out, Error, Collection)>,
 }
 
-impl<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>>
-    Repeat<C, P, Output, Collection>
+impl<In, Out, Error, P, Collection> Repeat<In, Out, Error, P, Collection>
+where
+    In: Slice,
+    P: Parser<In, Out, Error>,
+    Collection: FromIterator<Out>,
 {
     /// Set the minimum number of times to match.
     pub fn min(mut self, min: usize) -> Self {
@@ -25,9 +30,9 @@ impl<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>>
     }
 
     /// Collect the output of this parser.
-    pub fn collect<Dest>(self) -> Repeat<C, P, Output, Dest>
+    pub fn collect<Dest>(self) -> Repeat<In, Out, Error, P, Dest>
     where
-        Dest: FromIterator<Output>,
+        Dest: FromIterator<Out>,
     {
         Repeat {
             parser: self.parser,
@@ -38,12 +43,14 @@ impl<C: Context, P: Parser<C, Output>, Output, Collection: FromIterator<Output>>
     }
 }
 
-impl<C: Context, P: Parser<C, Output>, Output, Collection> Parser<C, Collection>
-    for Repeat<C, P, Output, Collection>
+impl<In, Out, Error, P, Collection> Parser<In, Collection, Error>
+    for Repeat<In, Out, Error, P, Collection>
 where
-    Collection: FromIterator<Output>,
+    In: Slice,
+    P: Parser<In, Out, Error>,
+    Collection: FromIterator<Out>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Collection> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Collection, Error> {
         let start = context.location();
         let mut num_matches = 0;
 
