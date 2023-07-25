@@ -45,6 +45,8 @@ impl<L: Location> fmt::Debug for Span<L> {
 pub trait Location: Copy + Eq + Ord + fmt::Debug {
     type Diff: Copy + Eq;
 
+    fn start() -> Self;
+
     fn abs_diff(self, other: Self) -> Self::Diff;
 }
 
@@ -53,6 +55,10 @@ macro_rules! impl_loc {
         $(
             impl Location for $t {
                 type Diff = $t;
+
+                fn start() -> Self {
+                    0
+                }
 
                 fn abs_diff(self, other: Self) -> Self::Diff {
                     self.abs_diff(other)

@@ -1,4 +1,45 @@
+pub mod slice;
+
+use self::slice::Slice;
 use crate::span::Location;
+
+pub struct ContextStruct<S: Slice, Error> {
+    slice: S,
+    loc: S::Location,
+
+    errors: Vec<Error>,
+}
+
+impl<S: Slice, Error> ContextStruct<S, Error> {
+    pub fn new(slice: S) -> Self {
+        Self {
+            slice,
+            loc: Location::start(),
+
+            errors: vec![],
+        }
+    }
+
+    pub fn slice(&self) -> S {
+        self.slice
+    }
+
+    pub fn location(&self) -> S::Location {
+        self.loc
+    }
+
+    pub fn set_location(&mut self, loc: S::Location) {
+        self.loc = loc;
+    }
+
+    pub fn report(&mut self, error: Error) {
+        self.errors.push(error);
+    }
+
+    pub fn errors(&self) -> &[Error] {
+        &self.errors
+    }
+}
 
 pub trait Context: Sized {
     type Token: Copy;
