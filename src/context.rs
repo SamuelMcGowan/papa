@@ -2,7 +2,7 @@ use crate::span::Location;
 
 pub trait Context<'a>: Sized + 'a {
     type Token;
-    type Slice: ?Sized;
+    type Slice;
 
     type Location: Location;
 
@@ -14,7 +14,7 @@ pub trait Context<'a>: Sized + 'a {
     fn location(&self) -> Self::Location;
     fn set_location(&mut self, location: Self::Location);
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> &'a Self::Slice;
+    fn slice(&self, start: Self::Location, end: Self::Location) -> Self::Slice;
 
     fn report(&mut self, error: Self::Error);
 }
@@ -45,7 +45,7 @@ impl<'a, Token: Clone, Error> VecContext<'a, Token, Error> {
 
 impl<'a, Token: Clone, Error: 'a> Context<'a> for VecContext<'a, Token, Error> {
     type Token = Token;
-    type Slice = [Token];
+    type Slice = &'a [Token];
 
     type Location = usize;
 
@@ -69,7 +69,7 @@ impl<'a, Token: Clone, Error: 'a> Context<'a> for VecContext<'a, Token, Error> {
         self.loc = location;
     }
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> &'a Self::Slice {
+    fn slice(&self, start: Self::Location, end: Self::Location) -> Self::Slice {
         &self.tokens[start..end]
     }
 
