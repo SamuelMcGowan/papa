@@ -5,6 +5,9 @@ pub mod primitive;
 pub mod recursive;
 pub mod utils;
 
+#[cfg(test)]
+mod tests;
+
 pub mod prelude {
     pub use crate::combinator::chain::chain;
     pub use crate::combinator::choice::choice;

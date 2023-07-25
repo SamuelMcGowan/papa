@@ -68,7 +68,7 @@ where
         let start = context.location();
 
         match context.next() {
-            Some(token) if (self.pred)(token) => context.next().ok_or(None),
+            Some(token) if (self.pred)(token) => Ok(token),
             _ => {
                 context.set_location(start);
                 Err(None)

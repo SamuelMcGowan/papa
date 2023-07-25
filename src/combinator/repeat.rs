@@ -75,6 +75,7 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NoRepeatOutput;
 
 impl<Item> FromIterator<Item> for NoRepeatOutput {

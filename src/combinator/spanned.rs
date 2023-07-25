@@ -9,13 +9,10 @@ pub struct Spanned<In: Slice, Out, Error, P: Parser<In, Out, Error>> {
     pub(crate) _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
-impl<In: Slice, Out, Error, P: Parser<In, Out, Error>> Parser<In, (Span<In::Location>, Out), Error>
+impl<In: Slice, Out, Error, P: Parser<In, Out, Error>> Parser<In, (Span, Out), Error>
     for Spanned<In, Out, Error, P>
 {
-    fn parse(
-        &self,
-        context: &mut Context<In, Error>,
-    ) -> ParseResult<(Span<In::Location>, Out), Error> {
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<(Span, Out), Error> {
         let start = context.location();
         let output = self.parser.parse(context);
 

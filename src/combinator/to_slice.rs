@@ -16,10 +16,11 @@ impl<In: Slice, Out, Error, P: Parser<In, Out, Error>> Parser<In, In, Error>
         let start = context.location();
         let output = self.parser.parse(context);
         output.map(|_| {
+            let end = context.location();
             context
                 .slice_all()
-                .slice(start, context.location())
-                .unwrap()
+                .slice(start, end)
+                .expect("couldn't get slice")
         })
     }
 }

@@ -1,17 +1,19 @@
-use super::span::Location;
-
 pub trait Slice: Sized + Copy {
     type Token: Copy;
-    type Location: Location;
 
     fn next(&self) -> Option<(Self::Token, Self)>;
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> Option<Self>;
+    fn slice(&self, start: usize, end: usize) -> Option<Self>;
+
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<'a, T: Copy> Slice for &'a [T] {
     type Token = T;
-    type Location = usize;
 
     fn next(&self) -> Option<(Self::Token, Self)> {
         match self {
@@ -20,21 +22,28 @@ impl<'a, T: Copy> Slice for &'a [T] {
         }
     }
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> Option<Self> {
+    fn slice(&self, start: usize, end: usize) -> Option<Self> {
         self.get(start..end)
+    }
+
+    fn len(&self) -> usize {
+        <[T]>::len(self)
     }
 }
 
 impl<'a> Slice for &'a str {
     type Token = char;
-    type Location = usize;
 
     fn next(&self) -> Option<(Self::Token, Self)> {
         let mut chars = self.chars();
         chars.next().map(|c| (c, chars.as_str()))
     }
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> Option<Self> {
+    fn slice(&self, start: usize, end: usize) -> Option<Self> {
         self.get(start..end)
+    }
+
+    fn len(&self) -> usize {
+        str::len(self)
     }
 }

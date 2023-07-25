@@ -2,28 +2,28 @@ use std::fmt;
 use std::ops::Range;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Span<L: Location> {
-    start: L,
-    end: L,
+pub struct Span {
+    start: usize,
+    end: usize,
 }
 
-impl<L: Location> Span<L> {
-    pub fn new(start: L, end: L) -> Self {
+impl Span {
+    pub fn new(start: usize, end: usize) -> Self {
         Self {
             start,
             end: end.max(start),
         }
     }
 
-    pub fn start(&self) -> L {
+    pub fn start(&self) -> usize {
         self.start
     }
 
-    pub fn end(&self) -> L {
+    pub fn end(&self) -> usize {
         self.end
     }
 
-    pub fn len(&self) -> L::Diff {
+    pub fn len(&self) -> usize {
         self.start.abs_diff(self.end)
     }
 
@@ -31,47 +31,13 @@ impl<L: Location> Span<L> {
         self.start == self.end
     }
 
-    pub fn to_range(self) -> Range<L> {
+    pub fn to_range(self) -> Range<usize> {
         self.start..self.end
     }
 }
 
-impl<L: Location> fmt::Debug for Span<L> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl fmt::Debug for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.to_range().fmt(f)
     }
 }
-
-pub trait Location: Copy + Eq + Ord + fmt::Debug {
-    type Diff: Copy + Eq;
-
-    fn start() -> Self;
-
-    fn add(self, other: Self) -> Self;
-
-    fn abs_diff(self, other: Self) -> Self::Diff;
-}
-
-macro_rules! impl_loc {
-    ($($t:ty)*) => {
-        $(
-            impl Location for $t {
-                type Diff = $t;
-
-                fn start() -> Self {
-                    0
-                }
-
-                fn add(self, other: Self) -> Self {
-                    self + other
-                }
-
-                fn abs_diff(self, other: Self) -> Self::Diff {
-                    self.abs_diff(other)
-                }
-            }
-        )*
-    };
-}
-
-impl_loc! { usize u128 u64 u32 u16 u8 }

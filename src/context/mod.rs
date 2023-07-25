@@ -2,14 +2,11 @@ pub mod slice;
 pub mod span;
 
 use self::slice::Slice;
-use self::span::Location;
 use crate::prelude::ParseResult;
 
 pub struct Context<In: Slice, Error> {
     slice_all: In,
     slice_current: In,
-
-    loc: In::Location,
 
     errors: Vec<Error>,
 }
@@ -19,8 +16,6 @@ impl<In: Slice, Error> Context<In, Error> {
         Self {
             slice_all: slice,
             slice_current: slice,
-
-            loc: Location::start(),
 
             errors: vec![],
         }
@@ -34,12 +29,15 @@ impl<In: Slice, Error> Context<In, Error> {
         self.slice_current
     }
 
-    pub fn location(&self) -> In::Location {
-        self.loc
+    pub fn location(&self) -> usize {
+        self.slice_all.len() - self.slice_current.len()
     }
 
-    pub fn set_location(&mut self, loc: In::Location) {
-        self.loc = loc;
+    pub fn set_location(&mut self, loc: usize) {
+        self.slice_current = self
+            .slice_all
+            .slice(loc, self.slice_all.len())
+            .expect("invalid location");
     }
 
     pub fn report(&mut self, error: Error) {
