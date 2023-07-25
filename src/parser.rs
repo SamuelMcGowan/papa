@@ -9,8 +9,10 @@ use crate::combinator::to_slice::ToSlice;
 use crate::context::Context;
 
 pub trait Parser<'a, C: Context<'a>, Output> {
+    /// Run this parser.
     fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output>;
 
+    /// Map the output of this parser to some other value.
     fn map<F, OutputB>(self, f: F) -> Map<'a, C, Self, Output, OutputB, F>
     where
         Self: Sized,
@@ -23,6 +25,7 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
+    /// Decide whether to accept an output.
     fn filter<F>(self, f: F) -> Filter<'a, C, Self, Output, F>
     where
         Self: Sized,
@@ -35,6 +38,7 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
+    /// Convert the output of this parser to `()`.
     fn drop(self) -> Drop<'a, C, Self, Output>
     where
         Self: Sized,
@@ -45,6 +49,13 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
+    /// Repeat this parser.
+    ///
+    /// The number of repetitions to match can be configured by calling `min`
+    /// and 'max`.
+    ///
+    /// Has no output by default. To output as a collection, call `collect` on
+    /// it.
     fn repeat(self) -> Repeat<'a, C, Self, Output, NoRepeatOutput>
     where
         Self: Sized,
@@ -57,6 +68,9 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
+    /// Get the span of the matched input.
+    ///
+    /// Has an output of form `(span, output)`.
     fn spanned(self) -> Spanned<'a, C, Self, Output>
     where
         Self: Sized,
@@ -67,6 +81,7 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
+    /// Convert the output to a slice of the matched input.
     fn to_slice(self) -> ToSlice<'a, C, Self, Output>
     where
         Self: Sized,
