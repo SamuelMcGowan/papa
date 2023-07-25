@@ -13,6 +13,6 @@ pub mod prelude {
     pub use crate::combinator::choice::choice;
     pub use crate::context::span::Span;
     pub use crate::parser::{ParseResult, Parser};
-    pub use crate::primitive::{any, func, nothing, pred};
+    pub use crate::primitive::{any, func, just, nothing, pred};
     pub use crate::recursive::recursive;
 }
