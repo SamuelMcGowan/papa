@@ -4,3 +4,4 @@ pub mod drop;
 pub mod filter;
 pub mod map;
 pub mod repeat;
+pub mod spanned;

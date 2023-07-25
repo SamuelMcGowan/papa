@@ -4,6 +4,7 @@ use crate::combinator::drop::Drop;
 use crate::combinator::filter::Filter;
 use crate::combinator::map::Map;
 use crate::combinator::repeat::RepetitionBuilder;
+use crate::combinator::spanned::Spanned;
 use crate::context::Context;
 
 pub trait Parser<C: Context, Output> {
@@ -51,6 +52,16 @@ pub trait Parser<C: Context, Output> {
             parser: self,
             min: 0,
             max: None,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn spanned(self) -> Spanned<C, Self, Output>
+    where
+        Self: Sized,
+    {
+        Spanned {
+            parser: self,
             _phantom: PhantomData,
         }
     }
