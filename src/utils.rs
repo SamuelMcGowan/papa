@@ -9,6 +9,10 @@ pub fn space<In: Slice<Token = char>, Error>() -> impl Parser<In, (), Error> {
     pred(|c: char| c.is_ascii_whitespace()).repeat().drop()
 }
 
+pub fn kwd<'a, Error>(s: &'static str) -> impl Parser<&'a str, &'a str, Error> {
+    ident().filter(move |&ident| ident == s)
+}
+
 fn is_ident_start(c: char) -> bool {
     c.is_ascii_alphabetic() || c == '_'
 }
