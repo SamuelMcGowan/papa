@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::combinator::{Drop, Map, RepetitionBuilder};
+use crate::combinator::{Drop, Filter, Map, RepetitionBuilder};
 use crate::context::Context;
 
 pub trait Parser<C: Context, Output> {
@@ -14,6 +14,18 @@ pub trait Parser<C: Context, Output> {
         Map {
             parser: self,
             map: f,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn filter<F>(self, f: F) -> Filter<C, Self, Output, F>
+    where
+        Self: Sized,
+        F: Fn(&Output) -> bool,
+    {
+        Filter {
+            parser: self,
+            filter: f,
             _phantom: PhantomData,
         }
     }
