@@ -42,7 +42,7 @@ impl<C: Context> Parser<C, ()> for Nothing<C> {
 pub fn pred<C, F>(pred: F) -> Pred<C, F>
 where
     C: Context,
-    F: Fn(&C::Token) -> bool + Copy,
+    F: Fn(C::Token) -> bool + Copy,
 {
     Pred {
         pred,
@@ -53,7 +53,7 @@ where
 pub struct Pred<C, F>
 where
     C: Context,
-    F: Fn(&C::Token) -> bool + Copy,
+    F: Fn(C::Token) -> bool + Copy,
 {
     pred: F,
     _phantom: PhantomData<*const C>,
@@ -62,12 +62,17 @@ where
 impl<C, F> Parser<C, C::Token> for Pred<C, F>
 where
     C: Context,
-    F: Fn(&C::Token) -> bool + Copy,
+    F: Fn(C::Token) -> bool + Copy,
 {
     fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
-        match context.peek() {
+        let start = context.location();
+
+        match context.next() {
             Some(token) if (self.pred)(token) => context.next().ok_or(None),
-            _ => Err(None),
+            _ => {
+                context.set_location(start);
+                Err(None)
+            }
         }
     }
 }
