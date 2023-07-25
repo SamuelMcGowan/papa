@@ -58,11 +58,7 @@ pub trait Parser<In: Slice, Out, Error> {
 
     /// Repeat this parser.
     ///
-    /// The number of repetitions to match can be configured by calling `min`
-    /// and 'max`.
-    ///
-    /// Has no output by default. To output as a collection, call `collect` on
-    /// it.
+    /// See the documentation of [`Repeat`] for more information.
     fn repeat(self) -> Repeat<In, Out, Error, Self, NoRepeatOutput>
     where
         Self: Sized,
