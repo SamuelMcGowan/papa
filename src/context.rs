@@ -2,6 +2,8 @@ use crate::span::Location;
 
 pub trait Context: Sized {
     type Token;
+    type Slice: ?Sized;
+
     type Location: Location;
 
     type Error;
@@ -12,57 +14,9 @@ pub trait Context: Sized {
     fn location(&self) -> Self::Location;
     fn set_location(&mut self, location: Self::Location);
 
+    fn slice(&self, start: Self::Location, end: Self::Location) -> &Self::Slice;
+
     fn report(&mut self, error: Self::Error);
-
-    #[inline]
-    fn matches<F>(&self, pred: F) -> bool
-    where
-        F: FnMut(&Self::Token) -> bool,
-    {
-        self.peek().is_some_and(pred)
-    }
-
-    #[inline]
-    fn eat_if<F>(&mut self, pred: F) -> Option<Self::Token>
-    where
-        F: FnMut(&Self::Token) -> bool,
-    {
-        if self.matches(pred) {
-            self.next()
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    fn eat_while<F>(&mut self, pred: F) -> EatWhile<Self, F>
-    where
-        Self: Sized,
-        F: FnMut(&Self::Token) -> bool,
-    {
-        EatWhile { tokens: self, pred }
-    }
-}
-
-pub struct EatWhile<'a, C, F>
-where
-    C: Context,
-    F: FnMut(&C::Token) -> bool,
-{
-    tokens: &'a mut C,
-    pred: F,
-}
-
-impl<C, F> Iterator for EatWhile<'_, C, F>
-where
-    C: Context,
-    F: FnMut(&C::Token) -> bool + Copy,
-{
-    type Item = C::Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.tokens.eat_if(self.pred)
-    }
 }
 
 pub struct VecContext<Token: Clone, Error> {
@@ -91,6 +45,8 @@ impl<Token: Clone, Error> VecContext<Token, Error> {
 
 impl<Token: Clone, Error> Context for VecContext<Token, Error> {
     type Token = Token;
+    type Slice = [Token];
+
     type Location = usize;
 
     type Error = Error;
@@ -111,6 +67,10 @@ impl<Token: Clone, Error> Context for VecContext<Token, Error> {
 
     fn set_location(&mut self, location: usize) {
         self.loc = location;
+    }
+
+    fn slice(&self, start: Self::Location, end: Self::Location) -> &Self::Slice {
+        &self.tokens[start..end]
     }
 
     fn report(&mut self, error: Self::Error) {

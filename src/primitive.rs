@@ -65,7 +65,10 @@ where
     F: Fn(&C::Token) -> bool + Copy,
 {
     fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
-        context.eat_if(self.pred).into()
+        match context.peek() {
+            Some(token) if (self.pred)(token) => context.next().into(),
+            _ => ParseResult::err(None),
+        }
     }
 }
 
