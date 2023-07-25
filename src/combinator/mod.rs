@@ -4,5 +4,5 @@ pub mod drop;
 pub mod filter;
 pub mod map;
 pub mod repeat;
-pub mod to_slice;
 pub mod spanned;
+pub mod to_slice;

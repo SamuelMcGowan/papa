@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 use crate::combinator::drop::Drop;
 use crate::combinator::filter::Filter;
 use crate::combinator::map::Map;
-use crate::combinator::repeat::RepetitionBuilder;
-use crate::combinator::to_slice::ToSlice;
+use crate::combinator::repeat::{NoRepeatOutput, Repeat};
 use crate::combinator::spanned::Spanned;
+use crate::combinator::to_slice::ToSlice;
 use crate::context::Context;
 
 pub trait Parser<'a, C: Context<'a>, Output> {
@@ -45,11 +45,11 @@ pub trait Parser<'a, C: Context<'a>, Output> {
         }
     }
 
-    fn repeat(self) -> RepetitionBuilder<'a, C, Self, Output>
+    fn repeat(self) -> Repeat<'a, C, Self, Output, NoRepeatOutput>
     where
         Self: Sized,
     {
-        RepetitionBuilder {
+        Repeat {
             parser: self,
             min: 0,
             max: None,
