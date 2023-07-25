@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
 
-use crate::combinator::{Drop, Filter, Map, RepetitionBuilder};
+use crate::combinator::drop::Drop;
+use crate::combinator::filter::Filter;
+use crate::combinator::map::Map;
+use crate::combinator::repeat::RepetitionBuilder;
 use crate::context::Context;
 
 pub trait Parser<C: Context, Output> {
