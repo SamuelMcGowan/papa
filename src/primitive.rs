@@ -77,6 +77,42 @@ where
     }
 }
 
+/// Match a single token.
+pub fn just<In: Slice, Error>(token: In::Token) -> Just<In, Error>
+where
+    In::Token: Eq,
+{
+    Just {
+        token,
+        _phantom: PhantomData,
+    }
+}
+
+pub struct Just<In: Slice, Error>
+where
+    In::Token: Eq,
+{
+    token: In::Token,
+    _phantom: PhantomData<*const Error>,
+}
+
+impl<In: Slice, Error> Parser<In, In::Token, Error> for Just<In, Error>
+where
+    In::Token: Eq,
+{
+    fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<In::Token, Error> {
+        let start = context.location();
+
+        match context.next() {
+            Some(token) if token == self.token => Ok(token),
+            _ => {
+                context.set_location(start);
+                Err(None)
+            }
+        }
+    }
+}
+
 /// Construct a parser from a function.
 pub fn func<In, Out, Error, F>(f: F) -> FuncParser<In, Out, Error, F>
 where
