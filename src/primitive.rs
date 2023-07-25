@@ -4,44 +4,44 @@ use crate::context::Context;
 use crate::parser::{ParseResult, Parser};
 
 /// Parse any token.
-pub fn any<C: Context>() -> Any<C> {
+pub fn any<'a, C: Context<'a>>() -> Any<'a, C> {
     Any {
         _phantom: PhantomData,
     }
 }
 
-pub struct Any<C: Context> {
-    _phantom: PhantomData<*const C>,
+pub struct Any<'a, C: Context<'a>> {
+    _phantom: PhantomData<&'a C>,
 }
 
-impl<C: Context> Parser<C, C::Token> for Any<C> {
+impl<'a, C: Context<'a>> Parser<'a, C, C::Token> for Any<'a, C> {
     #[inline]
-    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, C::Token> {
         context.next().into()
     }
 }
 
 /// Don't do anything, just output `()`.
-pub fn nothing<C: Context>() -> Nothing<C> {
+pub fn nothing<'a, C: Context<'a>>() -> Nothing<'a, C> {
     Nothing {
         _phantom: PhantomData,
     }
 }
 
-pub struct Nothing<C: Context> {
-    _phantom: PhantomData<*const C>,
+pub struct Nothing<'a, C: Context<'a>> {
+    _phantom: PhantomData<&'a C>,
 }
 
-impl<C: Context> Parser<C, ()> for Nothing<C> {
-    fn parse(&self, _context: &mut C) -> ParseResult<C, ()> {
+impl<'a, C: Context<'a>> Parser<'a, C, ()> for Nothing<'a, C> {
+    fn parse(&self, _context: &mut C) -> ParseResult<'a, C, ()> {
         ().into()
     }
 }
 
 /// Parse a token if it matches a predicate.
-pub fn pred<C, F>(pred: F) -> Pred<C, F>
+pub fn pred<'a, C, F>(pred: F) -> Pred<'a, C, F>
 where
-    C: Context,
+    C: Context<'a>,
     F: Fn(&C::Token) -> bool + Copy,
 {
     Pred {
@@ -50,21 +50,21 @@ where
     }
 }
 
-pub struct Pred<C, F>
+pub struct Pred<'a, C, F>
 where
-    C: Context,
+    C: Context<'a>,
     F: Fn(&C::Token) -> bool + Copy,
 {
     pred: F,
-    _phantom: PhantomData<*const C>,
+    _phantom: PhantomData<&'a C>,
 }
 
-impl<C, F> Parser<C, C::Token> for Pred<C, F>
+impl<'a, C, F> Parser<'a, C, C::Token> for Pred<'a, C, F>
 where
-    C: Context,
+    C: Context<'a>,
     F: Fn(&C::Token) -> bool + Copy,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, C::Token> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, C::Token> {
         match context.peek() {
             Some(token) if (self.pred)(token) => context.next().into(),
             _ => ParseResult::err(None),
@@ -73,10 +73,10 @@ where
 }
 
 /// Construct a parser from a function.
-pub fn func<C, F, Output>(f: F) -> FuncParser<C, F, Output>
+pub fn func<'a, C, F, Output>(f: F) -> FuncParser<'a, C, F, Output>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    C: Context<'a>,
+    F: Fn(&mut C) -> ParseResult<'a, C, Output>,
 {
     FuncParser {
         f,
@@ -84,21 +84,21 @@ where
     }
 }
 
-pub struct FuncParser<C, F, Output>
+pub struct FuncParser<'a, C, F, Output>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    C: Context<'a>,
+    F: Fn(&mut C) -> ParseResult<'a, C, Output>,
 {
     f: F,
     _phantom: PhantomData<*const (C, Output)>,
 }
 
-impl<C, F, Output> Parser<C, Output> for FuncParser<C, F, Output>
+impl<'a, C, F, Output> Parser<'a, C, Output> for FuncParser<'a, C, F, Output>
 where
-    C: Context,
-    F: Fn(&mut C) -> ParseResult<C, Output>,
+    C: Context<'a>,
+    F: Fn(&mut C) -> ParseResult<'a, C, Output>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
         (self.f)(context)
     }
 }

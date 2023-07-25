@@ -4,6 +4,7 @@ pub mod parser;
 pub mod primitive;
 pub mod recursive;
 pub mod span;
+pub mod utils;
 
 pub mod prelude {
     pub use crate::combinator::chain::chain;

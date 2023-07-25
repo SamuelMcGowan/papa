@@ -6,26 +6,26 @@ use crate::parser::{ParseResult, Parser};
 
 // Technique stolen from https://crates.io/crates/chumsky.
 
-pub struct Recursive<C: Context, Output> {
-    parser: OnceCell<Box<dyn Parser<C, Output>>>,
+pub struct Recursive<'a, C: Context<'a>, Output> {
+    parser: OnceCell<Box<dyn Parser<'a, C, Output> + 'a>>,
 }
 
-impl<C: Context, Output> Recursive<C, Output> {
+impl<'a, C: Context<'a>, Output> Recursive<'a, C, Output> {
     fn declare() -> Rc<Self> {
         Rc::new(Self {
             parser: OnceCell::new(),
         })
     }
 
-    fn define(&self, parser: impl Parser<C, Output> + 'static) {
+    fn define(&self, parser: impl Parser<'a, C, Output> + 'a) {
         if self.parser.set(Box::new(parser)).is_err() {
             panic!("Tried to define the parser multiple times.");
         }
     }
 }
 
-impl<C: Context, Output> Parser<C, Output> for Rc<Recursive<C, Output>> {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+impl<'a, C: Context<'a>, Output> Parser<'a, C, Output> for Rc<Recursive<'a, C, Output>> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
         let parser = self
             .parser
             .get()
@@ -40,9 +40,9 @@ impl<C: Context, Output> Parser<C, Output> for Rc<Recursive<C, Output>> {
 /// to construct a recursive parser.
 ///
 /// Panics if the parser is called inside the builder.
-pub fn recursive<C: Context, P: Parser<C, Output> + 'static, Output>(
-    build_parser: impl Fn(Rc<Recursive<C, Output>>) -> P,
-) -> Rc<Recursive<C, Output>> {
+pub fn recursive<'a, C: Context<'a>, P: Parser<'a, C, Output> + 'a, Output>(
+    build_parser: impl Fn(Rc<Recursive<'a, C, Output>>) -> P,
+) -> Rc<Recursive<'a, C, Output>> {
     let rec = Recursive::declare();
     rec.define(build_parser(rec.clone()));
     rec

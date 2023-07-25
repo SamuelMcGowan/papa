@@ -4,22 +4,24 @@ use paste::paste;
 
 use crate::prelude::*;
 
-pub fn chain<C: Context, P: ChainParsers<C, Output>, Output>(parsers: P) -> Chain<C, Output, P> {
+pub fn chain<'a, C: Context<'a>, P: ChainParsers<'a, C, Output>, Output>(
+    parsers: P,
+) -> Chain<'a, C, Output, P> {
     Chain {
         parsers,
         _phantom: PhantomData,
     }
 }
 
-pub struct Chain<C: Context, Output, Parsers: ChainParsers<C, Output>> {
+pub struct Chain<'a, C: Context<'a>, Output, Parsers: ChainParsers<'a, C, Output>> {
     parsers: Parsers,
-    _phantom: PhantomData<*const (C, Output)>,
+    _phantom: PhantomData<&'a (C, Output)>,
 }
 
-impl<C: Context, Output, Parsers: ChainParsers<C, Output>> Parser<C, Output>
-    for Chain<C, Output, Parsers>
+impl<'a, C: Context<'a>, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a, C, Output>
+    for Chain<'a, C, Output, Parsers>
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
         self.parsers.parse_chain(context)
     }
 }
@@ -27,20 +29,20 @@ impl<C: Context, Output, Parsers: ChainParsers<C, Output>> Parser<C, Output>
 /// A tuple of [`Parser`]s, to be passed to [`chain`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ChainParsers<Ctx: Context, Output> {
+pub trait ChainParsers<'a, Ctx: Context<'a>, Output> {
     #[doc(hidden)]
-    fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
+    fn parse_chain(&self, context: &mut Ctx) -> ParseResult<'a, Ctx, Output>;
 }
 
 macro_rules! impl_chain {
     ($($n:tt $parser:ident),*) => { paste!{
-        impl<Ctx, $($parser, [<$parser Out>],)*>
-        ChainParsers<Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
+        impl<'a, Ctx, $($parser, [<$parser Out>],)*>
+        ChainParsers<'a, Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
         where
-            Ctx: Context,
-            $($parser: Parser<Ctx, [<$parser Out>]>,)*
+            Ctx: Context<'a>,
+            $($parser: Parser<'a, Ctx, [<$parser Out>]>,)*
         {
-            fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx,($([<$parser Out>],)*)> {
+            fn parse_chain(&self, context: &mut Ctx) -> ParseResult<'a, Ctx,($([<$parser Out>],)*)> {
                 let start = context.location();
 
                 $(

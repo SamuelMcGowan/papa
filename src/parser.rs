@@ -4,13 +4,14 @@ use crate::combinator::drop::Drop;
 use crate::combinator::filter::Filter;
 use crate::combinator::map::Map;
 use crate::combinator::repeat::RepetitionBuilder;
+use crate::combinator::to_slice::ToSlice;
 use crate::combinator::spanned::Spanned;
 use crate::context::Context;
 
-pub trait Parser<C: Context, Output> {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Output>;
+pub trait Parser<'a, C: Context<'a>, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output>;
 
-    fn map<F, OutputB>(self, f: F) -> Map<C, Self, Output, OutputB, F>
+    fn map<F, OutputB>(self, f: F) -> Map<'a, C, Self, Output, OutputB, F>
     where
         Self: Sized,
         F: Fn(Output) -> OutputB + Copy,
@@ -22,7 +23,7 @@ pub trait Parser<C: Context, Output> {
         }
     }
 
-    fn filter<F>(self, f: F) -> Filter<C, Self, Output, F>
+    fn filter<F>(self, f: F) -> Filter<'a, C, Self, Output, F>
     where
         Self: Sized,
         F: Fn(&Output) -> bool,
@@ -34,7 +35,7 @@ pub trait Parser<C: Context, Output> {
         }
     }
 
-    fn drop(self) -> Drop<C, Self, Output>
+    fn drop(self) -> Drop<'a, C, Self, Output>
     where
         Self: Sized,
     {
@@ -44,7 +45,7 @@ pub trait Parser<C: Context, Output> {
         }
     }
 
-    fn repeat(self) -> RepetitionBuilder<C, Self, Output>
+    fn repeat(self) -> RepetitionBuilder<'a, C, Self, Output>
     where
         Self: Sized,
     {
@@ -56,7 +57,7 @@ pub trait Parser<C: Context, Output> {
         }
     }
 
-    fn spanned(self) -> Spanned<C, Self, Output>
+    fn spanned(self) -> Spanned<'a, C, Self, Output>
     where
         Self: Sized,
     {
@@ -65,13 +66,23 @@ pub trait Parser<C: Context, Output> {
             _phantom: PhantomData,
         }
     }
+
+    fn to_slice(self) -> ToSlice<'a, C, Self, Output>
+    where
+        Self: Sized,
+    {
+        ToSlice {
+            parser: self,
+            _phantom: PhantomData,
+        }
+    }
 }
 
-pub struct ParseResult<C: Context, Output> {
+pub struct ParseResult<'a, C: Context<'a>, Output> {
     inner: Result<Output, Option<C::Error>>,
 }
 
-impl<C: Context, Output> ParseResult<C, Output> {
+impl<'a, C: Context<'a>, Output> ParseResult<'a, C, Output> {
     pub fn err(err: Option<C::Error>) -> Self {
         Self { inner: Err(err) }
     }
@@ -93,15 +104,15 @@ impl<C: Context, Output> ParseResult<C, Output> {
     }
 }
 
-impl<C: Context, T> ParseResult<C, T> {
-    pub fn map<U>(self, f: impl Fn(T) -> U) -> ParseResult<C, U> {
+impl<'a, C: Context<'a>, T> ParseResult<'a, C, T> {
+    pub fn map<U>(self, f: impl Fn(T) -> U) -> ParseResult<'a, C, U> {
         ParseResult {
             inner: self.inner.map(f),
         }
     }
 }
 
-impl<C: Context, Output: Default> From<()> for ParseResult<C, Output> {
+impl<'a, C: Context<'a>, Output: Default> From<()> for ParseResult<'a, C, Output> {
     fn from(_value: ()) -> Self {
         Self {
             inner: Ok(Output::default()),
@@ -109,7 +120,7 @@ impl<C: Context, Output: Default> From<()> for ParseResult<C, Output> {
     }
 }
 
-impl<C: Context, Output> From<Option<Output>> for ParseResult<C, Output> {
+impl<'a, C: Context<'a>, Output> From<Option<Output>> for ParseResult<'a, C, Output> {
     fn from(output: Option<Output>) -> Self {
         match output {
             Some(output) => Self { inner: Ok(output) },
@@ -118,7 +129,7 @@ impl<C: Context, Output> From<Option<Output>> for ParseResult<C, Output> {
     }
 }
 
-impl<C: Context, Output> From<Result<Output, C::Error>> for ParseResult<C, Output> {
+impl<'a, C: Context<'a>, Output> From<Result<Output, C::Error>> for ParseResult<'a, C, Output> {
     fn from(output: Result<Output, C::Error>) -> Self {
         Self {
             inner: output.map_err(Some),

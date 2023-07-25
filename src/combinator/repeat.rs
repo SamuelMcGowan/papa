@@ -2,14 +2,14 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-pub struct RepetitionBuilder<C: Context, P: Parser<C, Output>, Output> {
+pub struct RepetitionBuilder<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output> {
     pub(crate) parser: P,
     pub(crate) min: usize,
     pub(crate) max: Option<usize>,
-    pub(crate) _phantom: PhantomData<*const (C, Output)>,
+    pub(crate) _phantom: PhantomData<&'a (C, Output)>,
 }
 
-impl<C: Context, P: Parser<C, Output>, Output> RepetitionBuilder<C, P, Output> {
+impl<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output> RepetitionBuilder<'a, C, P, Output> {
     /// Set the minimum number of times to match.
     pub fn min(mut self, min: usize) -> Self {
         self.min = min;
@@ -25,7 +25,7 @@ impl<C: Context, P: Parser<C, Output>, Output> RepetitionBuilder<C, P, Output> {
     /// Collect the output of this parser.
     ///
     /// Must be called to turn this [`RepetitionBuilder`] into a parser.
-    pub fn collect<Collection>(self) -> Repetition<C, P, Output, Collection>
+    pub fn collect<Collection>(self) -> Repetition<'a, C, P, Output, Collection>
     where
         Collection: FromIterator<Output>,
     {
@@ -36,20 +36,20 @@ impl<C: Context, P: Parser<C, Output>, Output> RepetitionBuilder<C, P, Output> {
     }
 }
 
-pub struct Repetition<C: Context, P: Parser<C, Output>, Output, Collection>
+pub struct Repetition<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output, Collection>
 where
     Collection: FromIterator<Output>,
 {
-    builder: RepetitionBuilder<C, P, Output>,
-    _phantom: PhantomData<*const Collection>,
+    builder: RepetitionBuilder<'a, C, P, Output>,
+    _phantom: PhantomData<&'a Collection>,
 }
 
-impl<C: Context, P: Parser<C, Output>, Output, Collection> Parser<C, Collection>
-    for Repetition<C, P, Output, Collection>
+impl<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output, Collection> Parser<'a, C, Collection>
+    for Repetition<'a, C, P, Output, Collection>
 where
     Collection: FromIterator<Output>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<C, Collection> {
+    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Collection> {
         let start = context.location();
         let mut num_matches = 0;
 

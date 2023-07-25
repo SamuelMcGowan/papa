@@ -1,6 +1,6 @@
 use crate::span::Location;
 
-pub trait Context: Sized {
+pub trait Context<'a>: Sized + 'a {
     type Token;
     type Slice: ?Sized;
 
@@ -14,28 +14,28 @@ pub trait Context: Sized {
     fn location(&self) -> Self::Location;
     fn set_location(&mut self, location: Self::Location);
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> &Self::Slice;
+    fn slice(&self, start: Self::Location, end: Self::Location) -> &'a Self::Slice;
 
     fn report(&mut self, error: Self::Error);
 }
 
-pub struct VecContext<Token: Clone, Error> {
-    tokens: Vec<Token>,
+pub struct VecContext<'a, Token: Clone, Error> {
+    tokens: &'a [Token],
     errors: Vec<Error>,
     loc: usize,
 }
 
-impl<Token: Clone, Error> VecContext<Token, Error> {
-    pub fn new(tokens: impl Into<Vec<Token>>) -> Self {
+impl<'a, Token: Clone, Error> VecContext<'a, Token, Error> {
+    pub fn new(tokens: &'a [Token]) -> Self {
         Self {
-            tokens: tokens.into(),
+            tokens,
             errors: vec![],
             loc: 0,
         }
     }
 
     pub fn tokens(&self) -> &[Token] {
-        &self.tokens
+        self.tokens
     }
 
     pub fn errors(&self) -> &[Error] {
@@ -43,7 +43,7 @@ impl<Token: Clone, Error> VecContext<Token, Error> {
     }
 }
 
-impl<Token: Clone, Error> Context for VecContext<Token, Error> {
+impl<'a, Token: Clone, Error: 'a> Context<'a> for VecContext<'a, Token, Error> {
     type Token = Token;
     type Slice = [Token];
 
@@ -69,7 +69,7 @@ impl<Token: Clone, Error> Context for VecContext<Token, Error> {
         self.loc = location;
     }
 
-    fn slice(&self, start: Self::Location, end: Self::Location) -> &Self::Slice {
+    fn slice(&self, start: Self::Location, end: Self::Location) -> &'a Self::Slice {
         &self.tokens[start..end]
     }
 
