@@ -6,11 +6,11 @@ use crate::parser::{ParseResult, Parser};
 
 // Technique stolen from https://crates.io/crates/chumsky.
 
-pub struct Recursive<'a, C: Context<'a>, Output> {
+pub struct Recursive<'a, C: Context, Output> {
     parser: OnceCell<Box<dyn Parser<'a, C, Output> + 'a>>,
 }
 
-impl<'a, C: Context<'a>, Output> Recursive<'a, C, Output> {
+impl<'a, C: Context, Output> Recursive<'a, C, Output> {
     fn declare() -> Rc<Self> {
         Rc::new(Self {
             parser: OnceCell::new(),
@@ -24,8 +24,8 @@ impl<'a, C: Context<'a>, Output> Recursive<'a, C, Output> {
     }
 }
 
-impl<'a, C: Context<'a>, Output> Parser<'a, C, Output> for Rc<Recursive<'a, C, Output>> {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
+impl<'a, C: Context, Output> Parser<'a, C, Output> for Rc<Recursive<'a, C, Output>> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         let parser = self
             .parser
             .get()
@@ -40,7 +40,7 @@ impl<'a, C: Context<'a>, Output> Parser<'a, C, Output> for Rc<Recursive<'a, C, O
 /// to construct a recursive parser.
 ///
 /// Panics if the parser is called inside the builder.
-pub fn recursive<'a, C: Context<'a>, P: Parser<'a, C, Output> + 'a, Output>(
+pub fn recursive<'a, C: Context, P: Parser<'a, C, Output> + 'a, Output>(
     build_parser: impl Fn(Rc<Recursive<'a, C, Output>>) -> P,
 ) -> Rc<Recursive<'a, C, Output>> {
     let rec = Recursive::declare();

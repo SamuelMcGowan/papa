@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 pub struct Filter<'a, C, P, Output, F>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, Output>,
     F: Fn(&Output) -> bool,
 {
@@ -15,11 +15,11 @@ where
 
 impl<'a, C, P, Output, F> Parser<'a, C, Output> for Filter<'a, C, P, Output, F>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, Output>,
     F: Fn(&Output) -> bool,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parser.parse(context).and_then(|output| {
             if (self.filter)(&output) {
                 Ok(output)

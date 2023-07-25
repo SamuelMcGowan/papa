@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 pub struct Repeat<
     'a,
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, Output>,
     Output,
     Collection: FromIterator<Output>,
@@ -15,7 +15,7 @@ pub struct Repeat<
     pub(crate) _phantom: PhantomData<&'a (C, Output, Collection)>,
 }
 
-impl<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output, Collection: FromIterator<Output>>
+impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection: FromIterator<Output>>
     Repeat<'a, C, P, Output, Collection>
 {
     /// Set the minimum number of times to match.
@@ -44,12 +44,12 @@ impl<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output, Collection: FromItera
     }
 }
 
-impl<'a, C: Context<'a>, P: Parser<'a, C, Output>, Output, Collection> Parser<'a, C, Collection>
+impl<'a, C: Context, P: Parser<'a, C, Output>, Output, Collection> Parser<'a, C, Collection>
     for Repeat<'a, C, P, Output, Collection>
 where
     Collection: FromIterator<Output>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Collection> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Collection> {
         let start = context.location();
         let mut num_matches = 0;
 

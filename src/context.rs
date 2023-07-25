@@ -1,6 +1,6 @@
 use crate::span::Location;
 
-pub trait Context<'a>: Sized + 'a {
+pub trait Context: Sized {
     type Token;
     type Slice;
 
@@ -43,7 +43,7 @@ impl<'a, Token: Clone, Error> VecContext<'a, Token, Error> {
     }
 }
 
-impl<'a, Token: Clone, Error: 'a> Context<'a> for VecContext<'a, Token, Error> {
+impl<'a, Token: Clone, Error: 'a> Context for VecContext<'a, Token, Error> {
     type Token = Token;
     type Slice = &'a [Token];
 

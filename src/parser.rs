@@ -8,9 +8,9 @@ use crate::combinator::spanned::Spanned;
 use crate::combinator::to_slice::ToSlice;
 use crate::context::Context;
 
-pub trait Parser<'a, C: Context<'a>, Output> {
+pub trait Parser<'a, C: Context, Output> {
     /// Run this parser.
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output>;
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output>;
 
     /// Map the output of this parser to some other value.
     fn map<F, OutputB>(self, f: F) -> Map<'a, C, Self, Output, OutputB, F>
@@ -93,4 +93,4 @@ pub trait Parser<'a, C: Context<'a>, Output> {
     }
 }
 
-pub type ParseResult<'a, C, Output> = Result<Output, Option<<C as Context<'a>>::Error>>;
+pub type ParseResult<C, Output> = Result<Output, Option<<C as Context>::Error>>;

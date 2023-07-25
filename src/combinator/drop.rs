@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 pub struct Drop<'a, C, P, Output>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, Output>,
 {
     pub(crate) parser: P,
@@ -13,10 +13,10 @@ where
 
 impl<'a, C, P, Output> Parser<'a, C, ()> for Drop<'a, C, P, Output>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, Output>,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, ()> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, ()> {
         self.parser.parse(context);
         Ok(())
     }

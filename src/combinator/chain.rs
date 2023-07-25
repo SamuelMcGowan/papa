@@ -4,7 +4,7 @@ use paste::paste;
 
 use crate::prelude::*;
 
-pub fn chain<'a, C: Context<'a>, P: ChainParsers<'a, C, Output>, Output>(
+pub fn chain<'a, C: Context, P: ChainParsers<'a, C, Output>, Output>(
     parsers: P,
 ) -> Chain<'a, C, Output, P> {
     Chain {
@@ -13,15 +13,15 @@ pub fn chain<'a, C: Context<'a>, P: ChainParsers<'a, C, Output>, Output>(
     }
 }
 
-pub struct Chain<'a, C: Context<'a>, Output, Parsers: ChainParsers<'a, C, Output>> {
+pub struct Chain<'a, C: Context, Output, Parsers: ChainParsers<'a, C, Output>> {
     parsers: Parsers,
     _phantom: PhantomData<&'a (C, Output)>,
 }
 
-impl<'a, C: Context<'a>, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a, C, Output>
+impl<'a, C: Context, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a, C, Output>
     for Chain<'a, C, Output, Parsers>
 {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, Output> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, Output> {
         self.parsers.parse_chain(context)
     }
 }
@@ -29,9 +29,9 @@ impl<'a, C: Context<'a>, Output, Parsers: ChainParsers<'a, C, Output>> Parser<'a
 /// A tuple of [`Parser`]s, to be passed to [`chain`].
 ///
 /// Currently implemented for tuples of up to 8 elements.
-pub trait ChainParsers<'a, Ctx: Context<'a>, Output> {
+pub trait ChainParsers<'a, Ctx: Context, Output> {
     #[doc(hidden)]
-    fn parse_chain(&self, context: &mut Ctx) -> ParseResult<'a, Ctx, Output>;
+    fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx, Output>;
 }
 
 macro_rules! impl_chain {
@@ -39,10 +39,10 @@ macro_rules! impl_chain {
         impl<'a, Ctx, $($parser, [<$parser Out>],)*>
         ChainParsers<'a, Ctx, ($([<$parser Out>],)*)> for ($($parser,)*)
         where
-            Ctx: Context<'a>,
+            Ctx: Context,
             $($parser: Parser<'a, Ctx, [<$parser Out>]>,)*
         {
-            fn parse_chain(&self, context: &mut Ctx) -> ParseResult<'a, Ctx,($([<$parser Out>],)*)> {
+            fn parse_chain(&self, context: &mut Ctx) -> ParseResult<Ctx,($([<$parser Out>],)*)> {
                 let start = context.location();
 
                 $(

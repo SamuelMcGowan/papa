@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 pub struct Map<'a, C, P, OA, OB, F>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, OA>,
     F: Fn(OA) -> OB + Copy,
 {
@@ -15,11 +15,11 @@ where
 
 impl<'a, C, P, OA, OB, F> Parser<'a, C, OB> for Map<'a, C, P, OA, OB, F>
 where
-    C: Context<'a>,
+    C: Context,
     P: Parser<'a, C, OA>,
     F: Fn(OA) -> OB + Copy,
 {
-    fn parse(&self, context: &mut C) -> ParseResult<'a, C, OB> {
+    fn parse(&self, context: &mut C) -> ParseResult<C, OB> {
         self.parser.parse(context).map(self.map)
     }
 }
