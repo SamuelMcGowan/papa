@@ -1,6 +1,7 @@
 pub mod slice;
 
 use self::slice::Slice;
+use crate::prelude::ParseResult;
 use crate::span::Location;
 
 pub struct Context<In: Slice, Error> {
@@ -46,6 +47,21 @@ impl<In: Slice, Error> Context<In, Error> {
 
     pub fn errors(&self) -> &[Error] {
         &self.errors
+    }
+
+    pub(crate) fn result_to_errors<Out>(
+        mut self,
+        result: ParseResult<Out, Error>,
+    ) -> (Option<Out>, Vec<Error>) {
+        let output = match result {
+            Ok(output) => Some(output),
+            Err(Some(err)) => {
+                self.report(err);
+                None
+            }
+            Err(None) => None,
+        };
+        (output, self.errors)
     }
 }
 

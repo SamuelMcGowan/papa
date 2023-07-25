@@ -10,6 +10,12 @@ use crate::context::slice::Slice;
 use crate::context::Context;
 
 pub trait Parser<In: Slice, Out, Error> {
+    fn parse_input(&self, input: In) -> (Option<Out>, Vec<Error>) {
+        let mut context = Context::new(input);
+        let result = self.parse(&mut context);
+        context.result_to_errors(result)
+    }
+
     /// Run this parser.
     fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error>;
 
