@@ -1,4 +1,4 @@
-use crate::span::Location;
+use super::span::Location;
 
 pub trait Slice: Sized + Copy {
     type Token: Copy;

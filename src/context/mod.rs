@@ -1,8 +1,9 @@
 pub mod slice;
+pub mod span;
 
 use self::slice::Slice;
+use self::span::Location;
 use crate::prelude::ParseResult;
-use crate::span::Location;
 
 pub struct Context<In: Slice, Error> {
     slice_all: In,
