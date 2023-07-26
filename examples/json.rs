@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use papa::prelude::*;
+use papa::utils::kwd;
 
 pub fn main() {
     let s = "{}";
@@ -55,7 +56,10 @@ fn parse_number<'a>() -> impl Parser<&'a str, Json, ()> {
 }
 
 fn parse_bool<'a>() -> impl Parser<&'a str, Json, ()> {
-    dummy_parser()
+    choice((
+        kwd("true").map(|_| Json::Bool(true)),
+        kwd("false").map(|_| Json::Bool(false)),
+    ))
 }
 
 fn parse_null<'a>() -> impl Parser<&'a str, Json, ()> {
