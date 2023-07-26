@@ -14,6 +14,7 @@ pub fn choice<In: Slice, Out, Error, P: ChoiceParsers<In, Out, Error>>(
     }
 }
 
+#[derive_where::derive_where(Debug, Clone; Parsers)]
 pub struct Choice<In: Slice, Out, Error, Parsers: ChoiceParsers<In, Out, Error>> {
     parsers: Parsers,
     _phantom: PhantomData<*const (In, Out, Error)>,

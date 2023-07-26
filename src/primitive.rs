@@ -11,6 +11,7 @@ pub fn any<In: Slice, Error>() -> Any<In, Error> {
     }
 }
 
+#[derive_where::derive_where(Debug, Clone, Copy)]
 pub struct Any<In: Slice, Error> {
     _phantom: PhantomData<*const (In, Error)>,
 }
@@ -29,6 +30,7 @@ pub fn nothing<In: Slice, Error>() -> Nothing<In, Error> {
     }
 }
 
+#[derive_where::derive_where(Debug, Clone, Copy)]
 pub struct Nothing<In: Slice, Error> {
     _phantom: PhantomData<*const (In, Error)>,
 }
@@ -50,6 +52,7 @@ where
     }
 }
 
+#[derive_where::derive_where(Debug, Clone, Copy; F)]
 pub struct Pred<In, Error, F>
 where
     In: Slice,
@@ -88,6 +91,7 @@ where
     }
 }
 
+#[derive_where::derive_where(Debug, Clone, Copy; In::Token)]
 pub struct Just<In: Slice, Error>
 where
     In::Token: Eq,
@@ -120,17 +124,18 @@ where
     F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
     FuncParser {
-        f,
+        func: f,
         _phantom: PhantomData,
     }
 }
 
+#[derive_where::derive_where(Debug, Clone; F)]
 pub struct FuncParser<In, Out, Error, F>
 where
     In: Slice,
     F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
-    f: F,
+    func: F,
     _phantom: PhantomData<*const (In, Out, Error)>,
 }
 
@@ -140,6 +145,6 @@ where
     F: Fn(&mut Context<In, Error>) -> ParseResult<Out, Error>,
 {
     fn parse(&self, context: &mut Context<In, Error>) -> ParseResult<Out, Error> {
-        (self.f)(context)
+        (self.func)(context)
     }
 }

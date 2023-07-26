@@ -15,6 +15,7 @@ pub fn chain<In: Slice, Out, Error, P: ChainParsers<In, Out, Error>>(
     }
 }
 
+#[derive_where::derive_where(Debug, Clone; Parsers)]
 pub struct Chain<In: Slice, Out, Error, Parsers: ChainParsers<In, Out, Error>> {
     parsers: Parsers,
     _phantom: PhantomData<*const (In, Out, Error)>,

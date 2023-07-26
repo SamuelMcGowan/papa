@@ -4,6 +4,7 @@ use crate::context::slice::Slice;
 use crate::context::Context;
 use crate::prelude::*;
 
+#[derive_where::derive_where(Debug, Clone; P)]
 pub struct Drop<In, Out, Error, P>
 where
     In: Slice,

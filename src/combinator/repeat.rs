@@ -4,6 +4,7 @@ use crate::context::slice::Slice;
 use crate::context::Context;
 use crate::prelude::*;
 
+#[derive_where::derive_where(Debug, Clone; P)]
 pub struct Repeat<In: Slice, Out, Error, P: Parser<In, Out, Error>, Collection: FromIterator<Out>> {
     pub(crate) parser: P,
     pub(crate) min: usize,

@@ -4,6 +4,7 @@ use crate::context::slice::Slice;
 use crate::context::Context;
 use crate::prelude::*;
 
+#[derive_where::derive_where(Debug, Clone; P, F)]
 pub struct Map<In, OA, OB, Error, P, F>
 where
     In: Slice,
